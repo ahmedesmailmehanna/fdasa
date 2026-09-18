@@ -1,0 +1,18 @@
+[gd_scene format=3 uid="uid://cxm5ckyf1cjp"]
+
+[ext_resource type="Script" uid="uid://ktg270qcgs7v" path="res://scenes/night.gd" id="1_7dt87"]
+[ext_resource type="PackedScene" uid="uid://hq08objm7673" path="res://scenes/camera_system.tscn" id="2_o60qq"]
+[ext_resource type="Script" uid="uid://csgqn3fr482nn" path="res://scripts/game_manager.gd" id="2_th6wt"]
+[ext_resource type="Script" uid="uid://bv8lx82wwbcep" path="res://scripts/animatronic.gd" id="3_o60qq"]
+
+[node name="Night" type="Node2D" unique_id=167903392]
+script = ExtResource("1_7dt87")
+
+[node name="GameManager" type="Node" parent="." unique_id=539837554]
+script = ExtResource("2_th6wt")
+
+[node name="TestStudent" type="Node" parent="." unique_id=22195601]
+script = ExtResource("3_o60qq")
+starting_node = "F1_Deputy"
+
+[node name="CameraSystem" parent="." unique_id=839633045 instance=ExtResource("2_o60qq")]

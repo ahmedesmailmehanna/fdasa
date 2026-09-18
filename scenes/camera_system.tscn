@@ -1,0 +1,20 @@
+[gd_scene format=3 uid="uid://hq08objm7673"]
+
+[ext_resource type="Script" uid="uid://dmtuh5cjtlann" path="res://scenes/camera_system.gd" id="1_38il2"]
+
+[node name="CameraSystem" type="Control" unique_id=839633045]
+layout_mode = 3
+anchors_preset = 0
+script = ExtResource("1_38il2")
+
+[node name="CameraBackground" type="TextureRect" parent="." unique_id=1437022134]
+unique_name_in_owner = true
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="CameraOverlay" type="TextureRect" parent="." unique_id=1894972953]
+unique_name_in_owner = true
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
