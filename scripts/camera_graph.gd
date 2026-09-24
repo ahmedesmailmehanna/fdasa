@@ -1,8 +1,10 @@
 extends Resource
 class_name CameraGraph
 
-# The map itself, as a directed graph.
-# Key   = a node id, e.g. "F1_Deputy"
-# Value = an Array of node ids reachable directly from that node.
-# This is what Animatronic._attempt_move() reads to decide where it can go.
+# The map one student is allowed to walk, as a weighted directed graph.
+# Key   = node id the student is standing on, e.g. "F1_HallL2"
+# Value = a Dictionary of { neighbor_id: weight }
+#         Higher weight = more likely to be picked. Weights are relative:
+#         {"A": 3, "B": 1} means A is 3x as likely as B.
+#         A node with an empty {} is a stopping point (e.g. the office door).
 @export var nodes: Dictionary = {}

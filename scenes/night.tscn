@@ -1,18 +1,26 @@
 [gd_scene format=3 uid="uid://cxm5ckyf1cjp"]
 
-[ext_resource type="Script" uid="uid://ktg270qcgs7v" path="res://scenes/night.gd" id="1_7dt87"]
+[ext_resource type="Script" uid="uid://ktg270qcgs7v" path="res://scripts/night.gd" id="1_7dt87"]
 [ext_resource type="PackedScene" uid="uid://hq08objm7673" path="res://scenes/camera_system.tscn" id="2_o60qq"]
+[ext_resource type="Resource" uid="uid://dfoyseepjlq11" path="res://data/nights/night_test.tres" id="2_s11eh"]
 [ext_resource type="Script" uid="uid://csgqn3fr482nn" path="res://scripts/game_manager.gd" id="2_th6wt"]
 [ext_resource type="Script" uid="uid://bv8lx82wwbcep" path="res://scripts/animatronic.gd" id="3_o60qq"]
+[ext_resource type="Resource" uid="uid://swaw8j4i0o4v" path="res://data/graphs/graph_bees.tres" id="4_s11eh"]
+[ext_resource type="Texture2D" uid="uid://bmg3pvwsem5bc" path="res://icon.svg" id="5_rfwdb"]
 
 [node name="Night" type="Node2D" unique_id=167903392]
 script = ExtResource("1_7dt87")
+test_config = ExtResource("2_s11eh")
 
 [node name="GameManager" type="Node" parent="." unique_id=539837554]
 script = ExtResource("2_th6wt")
 
-[node name="TestStudent" type="Node" parent="." unique_id=22195601]
+[node name="BeesTest" type="Node" parent="." unique_id=22195601]
 script = ExtResource("3_o60qq")
-starting_node = "F1_Deputy"
+graph = ExtResource("4_s11eh")
+starting_node = "F1_HallL1"
+placeholder_texture = ExtResource("5_rfwdb")
 
 [node name="CameraSystem" parent="." unique_id=839633045 instance=ExtResource("2_o60qq")]
+
+[node name="Node" type="Node" parent="." unique_id=494318151]

@@ -1,0 +1,46 @@
+[gd_resource type="Resource" script_class="CameraGraph" format=3]
+
+[ext_resource type="Script" path="res://scripts/camera_graph.gd" id="1_faatk"]
+
+[resource]
+script = ExtResource("1_faatk")
+nodes = {
+"F1_1D": {
+"F1_HallR1": 1
+},
+"F1_1E": {
+"F1_HallR1": 1
+},
+"F1_1F": {
+"F1_HallR1": 1
+},
+"F1_BiologyLab": {
+"F1_HallR2": 1,
+"F1_HallR3": 2
+},
+"F1_HallR1": {
+"F1_1D": 1,
+"F1_1E": 1,
+"F1_1F": 1,
+"F1_HallR2": 3,
+"F1_StairsR": 1
+},
+"F1_HallR2": {
+"F1_BiologyLab": 1,
+"F1_HallR1": 1,
+"F1_HallR3": 3,
+"F1_MrsSonya": 1
+},
+"F1_HallR3": {
+"F1_BiologyLab": 1,
+"F1_HallR2": 1,
+"F1_OfficeHall": 3
+},
+"F1_MrsSonya": {
+"F1_HallR2": 1
+},
+"F1_OfficeHall": {},
+"F1_StairsR": {
+"F1_HallR1": 1
+}
+}

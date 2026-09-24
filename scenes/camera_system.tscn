@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://hq08objm7673"]
 
-[ext_resource type="Script" uid="uid://dmtuh5cjtlann" path="res://scenes/camera_system.gd" id="1_38il2"]
+[ext_resource type="Script" uid="uid://dmtuh5cjtlann" path="res://scripts/camera_system.gd" id="1_38il2"]
 
 [node name="CameraSystem" type="Control" unique_id=839633045]
 layout_mode = 3

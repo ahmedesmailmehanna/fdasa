@@ -7,7 +7,7 @@ class_name CameraSystem
 @onready var bg_display: TextureRect = %CameraBackground
 @onready var overlay_display: TextureRect = %CameraOverlay
 
-var game_manager: GameManager   # typed properly — this is the actual fix
+var game_manager: GameManager
 
 func _ready() -> void:
 	game_manager = get_tree().get_first_node_in_group("game_manager") as GameManager
