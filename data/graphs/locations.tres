@@ -1,0 +1,7 @@
+[gd_resource type="Resource" script_class="LocationList" format=3]
+
+[ext_resource type="Script" path="res://scripts/location_list.gd" id="1_fq73o"]
+
+[resource]
+script = ExtResource("1_fq73o")
+nodes = PackedStringArray("F1_StairsL", "F1_StairsR", "F1_1A", "F1_1B", "F1_1C", "F1_1D", "F1_1E", "F1_1F", "F1_HallL1", "F1_HallL2", "F1_HallL3", "F1_HallR1", "F1_HallR2", "F1_HallR3", "F1_MrNabil", "F1_MrsSonya", "F1_ChemistryLab", "F1_BiologyLab", "F1_AtriumL", "F1_AtriumR", "F1_OfficeHall", "F1_PrincipalOffice", "F1_Bathroom", "F0_StairsL", "F0_StairsR", "F0_Bathroom", "F2_Bathroom", "F2_AtriumL")

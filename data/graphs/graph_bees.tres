@@ -1,10 +1,13 @@
-[gd_resource type="Resource" script_class="CameraGraph" format=3 uid="uid://swaw8j4i0o4v"]
+[gd_resource type="Resource" script_class="StudentGraph" format=3]
 
-[ext_resource type="Script" uid="uid://7qanym0adcch" path="res://scripts/camera_graph.gd" id="1_85b81"]
+[ext_resource type="Script" path="res://scripts/student_graph.gd" id="1_85b81"]
 
 [resource]
 script = ExtResource("1_85b81")
 nodes = {
+"F0_Bathroom": {
+"F1_Bathroom": 1
+},
 "F1_1A": {
 "F1_HallL1": 1
 },
@@ -13,6 +16,15 @@ nodes = {
 },
 "F1_1C": {
 "F1_HallL1": 1
+},
+"F1_AtriumL": {
+"F1_HallL2": 1,
+"F1_HallL3": 3
+},
+"F1_Bathroom": {
+"F0_Bathroom": 1,
+"F1_OfficeHall": 1,
+"F2_Bathroom": 2
 },
 "F1_ChemistryLab": {
 "F1_HallL2": 1,
@@ -26,12 +38,14 @@ nodes = {
 "F1_StairsL": 1
 },
 "F1_HallL2": {
+"F1_AtriumL": 1,
 "F1_ChemistryLab": 1,
 "F1_HallL1": 1,
 "F1_HallL3": 3,
 "F1_MrNabil": 1
 },
 "F1_HallL3": {
+"F1_AtriumL": 1,
 "F1_ChemistryLab": 1,
 "F1_HallL2": 1,
 "F1_OfficeHall": 3
@@ -42,5 +56,13 @@ nodes = {
 "F1_OfficeHall": {},
 "F1_StairsL": {
 "F1_HallL1": 1
+},
+"F2_AtriumL": {
+"F1_AtriumL": 3,
+"F2_Bathroom": 1
+},
+"F2_Bathroom": {
+"F1_Bathroom": 1,
+"F2_AtriumL": 2
 }
 }

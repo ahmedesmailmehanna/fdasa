@@ -1,5 +1,5 @@
 extends Resource
-class_name CameraGraph
+class_name StudentGraph
 
 # The map one student is allowed to walk, as a weighted directed graph.
 # Key   = node id the student is standing on, e.g. "F1_HallL2"

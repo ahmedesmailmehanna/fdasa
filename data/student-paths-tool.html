@@ -1,0 +1,1211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Student paths</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Kalam:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --paper: #EEF2F6;
+  --paper-2: #E2E8EF;
+  --grid: #D3DCE6;
+  --ink: #1F4FD8;
+  --ink-soft: #7C97E6;
+  --graphite: #262B33;
+  --pencil: #6D7785;
+  --faint: #B5BFCC;
+  --red: #D6333A;
+  --panel: #FFFFFF;
+  --line: #D3DCE6;
+  --ui: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --hand: "Kalam", "Comic Sans MS", "Segoe Print", cursive;
+  box-sizing: border-box;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #18202A;
+    --paper-2: #1E2833;
+    --grid: #26313D;
+    --ink: #7FA2FF;
+    --ink-soft: #4B64A8;
+    --graphite: #E6EAF0;
+    --pencil: #98A3B3;
+    --faint: #4A5563;
+    --red: #FF6B70;
+    --panel: #1C252F;
+    --line: #2C3844;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #18202A;
+  --paper-2: #1E2833;
+  --grid: #26313D;
+  --ink: #7FA2FF;
+  --ink-soft: #4B64A8;
+  --graphite: #E6EAF0;
+  --pencil: #98A3B3;
+  --faint: #4A5563;
+  --red: #FF6B70;
+  --panel: #1C252F;
+  --line: #2C3844;
+}
+html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body {
+  background: var(--paper);
+  color: var(--graphite);
+  font-family: var(--ui);
+  font-size: 15px;
+  line-height: 1.45;
+}
+button, input, select, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+.app {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  height: 100%;
+}
+@media (max-width: 900px) {
+  .app { grid-template-columns: 1fr; height: auto; }
+}
+
+/* ---------- Canvas side ---------- */
+.board { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+.bar {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--line);
+}
+.bar h1 {
+  font-family: var(--hand); font-weight: 700; font-size: 26px;
+  margin: 0 12px 0 0; line-height: 1; color: var(--ink);
+}
+.tabs { display: flex; flex-wrap: wrap; gap: 4px; }
+.tab {
+  border: 1.5px solid var(--line); background: transparent;
+  padding: 4px 12px; border-radius: 999px; cursor: pointer;
+}
+.tab[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: #fff; }
+.spacer { flex: 1; }
+.status { color: var(--pencil); font-size: 13px; }
+.status.bad { color: var(--red); }
+.tab.add { border-style: dashed; color: var(--pencil); }
+.tab-input { display: none; gap: 4px; align-items: center; }
+.tab-input.open { display: flex; }
+.tab-input input { width: 130px; border: 1.5px solid var(--ink); border-radius: 999px; padding: 3px 10px; background: var(--panel); }
+.toast { font-size: 13px; color: var(--ink); min-height: 1.2em; padding: 6px 16px 0; }
+.toast.bad { color: var(--red); }
+.node .hit { fill: transparent; }
+.file-row { display: flex; flex-wrap: wrap; gap: 6px; }
+
+.canvas-wrap { flex: 1; overflow: auto; min-height: 0; }
+svg.map { display: block; width: 100%; min-width: 720px; height: auto; user-select: none; touch-action: none; }
+
+.band-label { font-family: var(--hand); font-size: 18px; fill: var(--pencil); }
+.band { fill: var(--paper-2); }
+
+.edge { fill: none; stroke: var(--ink-soft); stroke-width: 1.6; }
+.edge.zero { stroke-dasharray: 4 4; }
+.edge.hi { stroke: var(--ink); stroke-width: 2.4; }
+.edge.in { stroke: var(--pencil); stroke-width: 1.8; }
+.edge.dim { stroke: var(--faint); opacity: .45; }
+.arrow-norm { fill: var(--ink-soft); }
+.arrow-hi { fill: var(--ink); }
+.arrow-in { fill: var(--pencil); }
+.arrow-dim { fill: var(--faint); }
+
+.wlabel rect { fill: var(--panel); stroke: var(--line); }
+.wlabel text { font-size: 11px; font-weight: 700; fill: var(--graphite); }
+.wlabel.hi rect { stroke: var(--ink); }
+.wlabel.hi text { fill: var(--ink); }
+.wlabel.dim { opacity: .35; }
+
+.node { cursor: pointer; }
+.node circle.dot { fill: var(--ink); stroke: var(--paper); stroke-width: 3; }
+.node.out circle.dot { fill: var(--paper); stroke: var(--faint); stroke-width: 2; stroke-dasharray: 3 3; }
+.node.stop circle.ring { fill: none; stroke: var(--red); stroke-width: 2.5; }
+.node.sel circle.ring { fill: none; stroke: var(--ink); stroke-width: 3; }
+.node text {
+  font-family: var(--hand); font-size: 15px; fill: var(--graphite);
+  paint-order: stroke; stroke: var(--paper); stroke-width: 4px; stroke-linejoin: round;
+}
+.node.out text { fill: var(--pencil); }
+.node.stop text { fill: var(--red); }
+.connecting .node { cursor: crosshair; }
+
+.hint { color: var(--pencil); font-size: 13px; padding: 8px 16px; border-top: 1px solid var(--line); }
+.hint kbd { font: inherit; border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; }
+
+/* ---------- Panel ---------- */
+.panel {
+  background: var(--panel);
+  border-left: 1px solid var(--line);
+  overflow-y: auto;
+  padding: 16px;
+}
+@media (max-width: 900px) { .panel { border-left: 0; border-top: 1px solid var(--line); } }
+.panel section { padding-bottom: 18px; margin-bottom: 18px; border-bottom: 1px solid var(--line); }
+.panel section:last-child { border-bottom: 0; }
+.panel h2 { font-size: 16px; margin: 0 0 8px; }
+.panel h2 .node-name { font-family: var(--hand); font-size: 22px; color: var(--ink); font-weight: 700; }
+.muted { color: var(--pencil); font-size: 13px; margin: 0 0 10px; }
+
+.btn {
+  border: 1.5px solid var(--line); background: transparent; border-radius: 8px;
+  padding: 5px 10px; cursor: pointer;
+}
+.btn:hover { border-color: var(--ink); }
+.btn.primary { background: var(--ink); color: #fff; border-color: var(--ink); }
+.btn.danger { color: var(--red); }
+.btn.danger.armed { background: var(--red); color: #fff; border-color: var(--red); }
+.btn[aria-pressed="true"] { background: var(--ink); color: #fff; border-color: var(--ink); }
+.row-btns { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+
+.edges { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.erow {
+  display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 4px 8px; align-items: center;
+  padding: 6px 8px; border-radius: 8px; background: var(--paper);
+}
+.erow .to { font-family: var(--hand); font-size: 16px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; background: none; border: 0; padding: 0; text-align: left; cursor: pointer; }
+.erow .ctrl { display: flex; align-items: center; gap: 2px; }
+.erow .ctrl button { width: 26px; height: 26px; border: 1px solid var(--line); background: var(--panel); border-radius: 6px; cursor: pointer; padding: 0; }
+.erow .ctrl input { width: 44px; text-align: center; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); padding: 2px; }
+.erow .bar-wrap { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; }
+.erow .pct-bar { flex: 1; height: 6px; border-radius: 3px; background: var(--paper-2); overflow: hidden; }
+.erow .pct-bar span { display: block; height: 100%; background: var(--ink); }
+.erow .pct { font-size: 12px; color: var(--pencil); width: 38px; text-align: right; }
+.erow .extras { grid-column: 1 / -1; display: flex; gap: 10px; font-size: 12px; }
+.linkish { background: none; border: 0; padding: 0; color: var(--ink); cursor: pointer; text-decoration: underline; font-size: 12px; }
+.linkish.red { color: var(--red); }
+.erow.flash { outline: 2px solid var(--ink); }
+
+.add-row { display: flex; gap: 6px; margin-top: 8px; }
+.add-row select, .add-row input { flex: 1; min-width: 0; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); padding: 5px 8px; }
+
+.chips { display: flex; flex-wrap: wrap; gap: 4px; }
+.chip { font-family: var(--hand); font-size: 15px; border: 1px solid var(--line); border-radius: 999px; padding: 0 10px; background: none; cursor: pointer; }
+.chip.red { color: var(--red); border-color: var(--red); }
+.check-group + .check-group { margin-top: 10px; }
+.check-group p { margin: 0 0 4px; font-size: 13px; }
+
+textarea {
+  width: 100%; min-height: 160px; resize: vertical;
+  font-family: ui-monospace, Consolas, monospace; font-size: 12px;
+  border: 1px solid var(--line); border-radius: 8px; background: var(--paper); padding: 8px;
+  white-space: pre; overflow: auto;
+}
+.msg { font-size: 13px; margin-top: 6px; min-height: 1.2em; }
+.msg.bad { color: var(--red); }
+.msg.good { color: var(--ink); }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+
+.floorbar {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 4px;
+  padding: 8px 16px 0;
+}
+.floorbar .lbl { color: var(--pencil); font-size: 13px; margin-right: 4px; }
+.floorbar .tab { font-size: 13px; padding: 2px 10px; }
+.node.ghost circle.dot { fill: var(--paper); stroke: var(--ink); stroke-width: 2; stroke-dasharray: 2 3; }
+.node.ghost text { font-family: var(--ui); font-size: 12px; fill: var(--pencil); }
+.band-empty { font-family: var(--hand); font-size: 20px; fill: var(--pencil); }
+.band-edge { stroke: var(--faint); stroke-width: 1.5; stroke-dasharray: 6 6; }
+.updated { font-size: 12px; color: var(--pencil); margin-left: auto; }
+.rename-row { display: flex; gap: 6px; margin-top: 10px; }
+.rename-row input { flex: 1; min-width: 0; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); padding: 5px 8px; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="board">
+    <div class="bar">
+      <h1>Student paths</h1>
+      <div class="tabs" id="tabs" role="group" aria-label="Student"></div>
+      <button class="tab add" id="addStudentBtn">+ Student</button>
+      <span class="tab-input" id="addStudentBox">
+        <input id="newGraphName" placeholder="e.g. Hazem" aria-label="New student name">
+        <button class="btn primary" id="addGraphBtn">Add</button>
+      </span>
+      <button class="btn" id="connectBtn" aria-pressed="false" title="Or hold Shift while clicking">Connect</button>
+      <span class="spacer"></span>
+      <span class="status" id="status">Loading saved graphs…</span>
+    </div>
+    <div class="floorbar" id="floorbar" role="group" aria-label="Floors"></div>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <div class="canvas-wrap" id="canvasWrap">
+      <svg class="map" id="map" viewBox="0 0 1060 650" aria-label="Map of student paths"></svg>
+    </div>
+    <div class="hint">
+      Click a spot to select it. <kbd>Shift</kbd>+click another (or turn on Connect) to add a path. Drag spots, or nudge the selected one with arrow keys (<kbd>Shift</kbd> for bigger steps). Dashed spots at the edge belong to another floor: click one to go there. <kbd>Esc</kbd> deselects.
+    </div>
+  </div>
+
+  <aside class="panel" id="panel">
+    <section id="nodeSection"></section>
+
+    <section>
+      <h2>Check</h2>
+      <div id="checks"></div>
+    </section>
+
+    <section>
+      <h2>File</h2>
+      <p class="muted">Save to <code>data/student_paths.json</code> in your Godot project. The generator reads it from there.</p>
+      <div class="file-row">
+        <button class="btn primary" id="saveFileBtn">Save file</button>
+        <button class="btn" id="openFileBtn">Open file</button>
+        <input type="file" id="fileInput" accept=".json,application/json" hidden>
+      </div>
+      <div class="msg" id="fileMsg"></div>
+    </section>
+
+    <section>
+      <h2>Spots</h2>
+      <p class="muted">The prefix picks the floor: <code>F0_FabLab</code>, <code>F3_Library</code>. A new prefix adds that floor.</p>
+      <div class="add-row">
+        <input id="newNodeName" placeholder="F1_Library" aria-label="New spot name">
+        <button class="btn" id="addNodeBtn">Add spot</button>
+      </div>
+      <p class="muted" style="margin-top:12px">Or paste many at once: one per line, comma separated, or your generator's <code>PackedStringArray([ … ])</code>.</p>
+      <textarea id="bulkSpots" aria-label="Spot names to add" style="min-height:90px" placeholder='"F2_HallL1", "F2_2A", "F2_2B",&#10;F0_FabLab&#10;F3_Library'></textarea>
+      <div class="row-btns"><button class="btn" id="bulkSpotsBtn">Add these spots</button></div>
+      <div class="msg" id="nodeMsg"></div>
+    </section>
+
+    <section>
+      <h2 id="studentTitle">Student</h2>
+      <button class="btn danger" id="delGraphBtn">Delete this student's graph</button>
+      <div class="msg" id="graphMsg"></div>
+    </section>
+
+    <section>
+      <h2 style="display:flex;align-items:baseline">Export to Godot <span class="updated" id="exportUpdated"></span></h2>
+      <div class="add-row">
+        <select id="exportKind" aria-label="What to export">
+          <option value="graph">This graph (g.nodes = …)</option>
+          <option value="locations">Spot list (l.nodes = …)</option>
+          <option value="backup">Full file (JSON)</option>
+        </select>
+        <button class="btn primary" id="copyBtn">Copy</button>
+      </div>
+      <textarea id="exportText" readonly aria-label="Export text" style="margin-top:8px"></textarea>
+      <div class="msg" id="copyMsg"></div>
+    </section>
+
+    <section>
+      <h2>Import</h2>
+      <p class="muted">Paste a <code>g.nodes = { … }</code> block to replace the current graph, or a full JSON file to replace everything.</p>
+      <textarea id="importText" aria-label="Import text" placeholder='g.nodes = {&#10;	"F1_StairsL": {"F1_HallL1": 1},&#10;}'></textarea>
+      <div class="row-btns"><button class="btn" id="importBtn">Import</button></div>
+      <div class="msg" id="importMsg"></div>
+    </section>
+  </aside>
+</div>
+
+<script>
+(() => {
+  "use strict";
+
+  // ==================================================================
+  // Layout constants
+  // ==================================================================
+  const W = 1060;          // map width
+  const BAND_H = 650;      // height of one floor
+  const GAP = 40;          // gap between floors in "All floors" view
+  const R = 11;            // spot radius
+  const NAME_RE = /^F\d+_[A-Za-z0-9_]+$/;
+  const SVG_NS = "http://www.w3.org/2000/svg";
+  const LS_KEY = "fdasa-student-paths";
+
+  // ==================================================================
+  // Default data (old v1 coordinates, migrated on load)
+  // ==================================================================
+  const DEFAULT_V1 = {
+    version: 1,
+    locations: {
+      "F2_AtriumL": { x: 300, y: 70 }, "F2_Bathroom": { x: 424, y: 70 },
+      "F1_StairsL": { x: 189, y: 295 }, "F1_1A": { x: 108, y: 346 }, "F1_1C": { x: 329, y: 322 },
+      "F1_HallL1": { x: 235, y: 370 }, "F1_MrNabil": { x: 389, y: 368 }, "F1_1B": { x: 188, y: 438 },
+      "F1_HallL2": { x: 325, y: 445 }, "F1_AtriumL": { x: 440, y: 472 }, "F1_ChemistryLab": { x: 300, y: 555 },
+      "F1_HallL3": { x: 430, y: 540 }, "F1_Bathroom": { x: 410, y: 645 }, "F1_OfficeHall": { x: 510, y: 612 },
+      "F1_PrincipalOffice": { x: 510, y: 740 },
+      "F1_StairsR": { x: 827, y: 278 }, "F1_1F": { x: 685, y: 304 }, "F1_1E": { x: 915, y: 316 },
+      "F1_HallR1": { x: 765, y: 365 }, "F1_MrsSonya": { x: 624, y: 367 }, "F1_1D": { x: 829, y: 415 },
+      "F1_HallR2": { x: 691, y: 445 }, "F1_AtriumR": { x: 580, y: 482 }, "F1_BiologyLab": { x: 715, y: 557 },
+      "F1_HallR3": { x: 600, y: 547 },
+      "F0_StairsL": { x: 189, y: 852 }, "F0_Bathroom": { x: 410, y: 852 }, "F0_StairsR": { x: 827, y: 852 }
+    },
+    graphs: {
+      "Bees": {
+        "F2_Bathroom": { "F2_AtriumL": 2, "F1_Bathroom": 1 },
+        "F2_AtriumL": { "F1_AtriumL": 3, "F2_Bathroom": 1 },
+        "F1_AtriumL": { "F1_HallL3": 3, "F1_HallL2": 1 },
+        "F1_StairsL": { "F1_HallL1": 1 },
+        "F1_HallL1": { "F1_HallL2": 3, "F1_1A": 1, "F1_1B": 1, "F1_1C": 1, "F1_StairsL": 1 },
+        "F1_1A": { "F1_HallL1": 1 }, "F1_1B": { "F1_HallL1": 1 }, "F1_1C": { "F1_HallL1": 1 },
+        "F1_HallL2": { "F1_HallL3": 3, "F1_MrNabil": 1, "F1_ChemistryLab": 1, "F1_AtriumL": 1, "F1_HallL1": 1 },
+        "F1_MrNabil": { "F1_HallL2": 1 },
+        "F1_ChemistryLab": { "F1_HallL3": 2, "F1_HallL2": 1 },
+        "F1_HallL3": { "F1_OfficeHall": 3, "F1_ChemistryLab": 1, "F1_AtriumL": 1, "F1_HallL2": 1 },
+        "F1_Bathroom": { "F2_Bathroom": 2, "F0_Bathroom": 1, "F1_OfficeHall": 1 },
+        "F0_Bathroom": { "F1_Bathroom": 1 },
+        "F1_OfficeHall": {}
+      },
+      "Meer": {
+        "F1_StairsR": { "F1_HallR1": 1 },
+        "F1_HallR1": { "F1_HallR2": 3, "F1_1E": 1, "F1_1D": 1, "F1_1F": 1, "F1_StairsR": 1 },
+        "F1_1E": { "F1_HallR1": 1 }, "F1_1D": { "F1_HallR1": 1 }, "F1_1F": { "F1_HallR1": 1 },
+        "F1_HallR2": { "F1_HallR3": 3, "F1_MrsSonya": 1, "F1_BiologyLab": 1, "F1_HallR1": 1 },
+        "F1_MrsSonya": { "F1_HallR2": 1 },
+        "F1_BiologyLab": { "F1_HallR3": 2, "F1_HallR2": 1 },
+        "F1_HallR3": { "F1_OfficeHall": 3, "F1_BiologyLab": 1, "F1_HallR2": 1 },
+        "F1_OfficeHall": {}
+      }
+    }
+  };
+
+  // ==================================================================
+  // State
+  // ==================================================================
+  // state = { version: 2, floors: [numbers], locations: { id: {x, y} },  (x,y inside the spot's own floor)
+  //           graphs: { studentName: { from: { to: weight } } } }
+  let state = null;   // filled in at startup, below
+  let current = "Bees";
+  let view = 1;            // floor number, or "all"
+  let selected = null;
+  let connectMode = false;
+  let flashTarget = null;
+  let touched = false;
+
+  const $ = (id) => document.getElementById(id);
+  const svg = $("map");
+
+  function clone(o) { return JSON.parse(JSON.stringify(o)); }
+  function graph() { return state.graphs[current] || {}; }
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  }
+  function floorOf(id) { const m = /^F(\d+)_/.exec(id); return m ? Number(m[1]) : 1; }
+  const short = (id) => id.replace(/^F\d+_/, "");
+  const clampY = (y) => Math.round(Math.max(20, Math.min(BAND_H - 20, y)));
+  const clampX = (x) => Math.round(Math.max(20, Math.min(W - 20, x)));
+
+  // Converts old saves (one tall canvas) to per-floor coordinates.
+  function migrate(data) {
+    if (!data || typeof data !== "object" || !data.locations || !data.graphs) return null;
+    const out = { version: 2, floors: [], locations: {}, graphs: data.graphs };
+    const floorSet = new Set(Array.isArray(data.floors) ? data.floors.map(Number) : [0, 1, 2]);
+    for (const id in data.locations) {
+      const p = data.locations[id], f = floorOf(id);
+      floorSet.add(f);
+      let y = Number(p.y) || 0;
+      if (!data.version || data.version < 2) {
+        if (f === 1) y -= 150;
+        else if (f === 0) y -= 800;
+      }
+      out.locations[id] = { x: clampX(Number(p.x) || 0), y: clampY(y) };
+    }
+    out.floors = [...floorSet].filter((n) => Number.isInteger(n) && n >= 0);
+    return out;
+  }
+
+  function floors() {
+    const set = new Set(state.floors);
+    for (const id in state.locations) set.add(floorOf(id));
+    return [...set].sort((a, b) => b - a);   // top floor first
+  }
+  function bandTop(f) {
+    if (view !== "all") return 0;
+    return floors().indexOf(f) * (BAND_H + GAP);
+  }
+
+  // Where a spot is drawn right now. Spots on other floors appear as
+  // "ghosts" at the top/bottom edge when a path connects them to this floor.
+  function dispPos(id, ghostIds) {
+    const p = state.locations[id];
+    if (!p) return null;
+    const f = floorOf(id);
+    if (view === "all") return { x: p.x, y: bandTop(f) + p.y };
+    if (f === view) return { x: p.x, y: p.y };
+    if (ghostIds.has(id)) return { x: p.x, y: f > view ? 28 : BAND_H - 28, ghost: true };
+    return null;
+  }
+  function ghostSet() {
+    const s = new Set();
+    if (view === "all") return s;
+    const g = graph();
+    for (const from in g) for (const to in g[from]) {
+      const ff = floorOf(from), tf = floorOf(to);
+      if (ff === view && tf !== view) s.add(to);
+      if (tf === view && ff !== view) s.add(from);
+    }
+    return s;
+  }
+
+  // ==================================================================
+  // Messages
+  // ==================================================================
+  let toastTimer = null;
+  function toast(text, bad) {
+    const t = $("toast");
+    t.textContent = text;
+    t.classList.toggle("bad", !!bad);
+    clearTimeout(toastTimer);
+    if (text) toastTimer = setTimeout(() => { t.textContent = ""; }, 4000);
+  }
+  function setMsg(id, text, kind) {
+    const m = $(id);
+    m.className = "msg" + (kind ? " " + kind : "");
+    m.textContent = text;
+  }
+  function setStatus(text, bad) { const s = $("status"); s.textContent = text; s.classList.toggle("bad", !!bad); }
+
+  // ==================================================================
+  // Saving: Claude's db inside Claude, else this browser
+  // ==================================================================
+  let db = null, saveMode = "none", saveTimer = null, saving = false, dirty = false;
+
+  function changed() {
+    touched = true;
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(save, 700);
+    render();
+  }
+
+  async function save() {
+    if (saveMode === "db") {
+      if (saving) { dirty = true; return; }
+      saving = true;
+      setStatus("Saving…");
+      try { await db.doc("tool/state").set(clone(state)); setStatus("Saved"); }
+      catch (e) {
+        if (e && e.code === "unavailable") {
+          await new Promise((r) => setTimeout(r, 800 + Math.random() * 800));
+          try { await db.doc("tool/state").set(clone(state)); setStatus("Saved"); }
+          catch { setStatus("Not saved. Use Save file to keep your work.", true); }
+        } else setStatus("Not saved. Use Save file to keep your work.", true);
+      }
+      saving = false;
+      if (dirty) { dirty = false; save(); }
+    } else if (saveMode === "local") {
+      try { localStorage.setItem(LS_KEY, JSON.stringify(state)); setStatus("Saved in this browser"); }
+      catch { setStatus("Not saved. Use Save file to keep your work.", true); }
+    } else setStatus("Not saved. Use Save file to keep your work.", true);
+  }
+
+  function loadInto(data) {
+    const m = migrate(data);
+    if (!m) return false;
+    state = m;
+    if (!state.graphs[current]) current = Object.keys(state.graphs)[0] || "Bees";
+    if (!state.graphs[current]) state.graphs[current] = {};
+    if (view !== "all" && !floors().includes(view)) view = floors().includes(1) ? 1 : floors()[0];
+    selected = null;
+    return true;
+  }
+
+  async function initStorage() {
+    try { if (window.claude && typeof window.claude.use === "function") db = await window.claude.use("db"); }
+    catch { db = null; }
+    if (db) {
+      saveMode = "db";
+      try {
+        const snap = await db.doc("tool/state").get();
+        if (touched) save();
+        else if (snap.exists) { loadInto(snap.data()); render(); setStatus("Saved"); }
+        else { setStatus("Saved"); save(); }
+      } catch { setStatus("Couldn't load saved graphs. Showing the defaults.", true); }
+      return;
+    }
+    try {
+      localStorage.setItem(LS_KEY + "-t", "1"); localStorage.removeItem(LS_KEY + "-t");
+      saveMode = "local";
+      const raw = localStorage.getItem(LS_KEY);
+      if (raw && !touched) { loadInto(JSON.parse(raw)); render(); }
+      setStatus("Saved in this browser");
+    } catch { saveMode = "none"; setStatus("Not saved. Use Save file to keep your work.", true); }
+  }
+
+  // ==================================================================
+  // Edits
+  // ==================================================================
+  function addEdge(from, to, w = 1) {
+    if (from === to) return "self";
+    const g = graph();
+    if (!g[from]) g[from] = {};
+    if (!g[to]) g[to] = {};
+    flashTarget = to;
+    if (g[from][to] !== undefined) return "exists";
+    g[from][to] = w;
+    return "added";
+  }
+  function removeFromGraph(id) { const g = graph(); delete g[id]; for (const k in g) delete g[k][id]; }
+  function deleteLocation(id) {
+    delete state.locations[id];
+    for (const n in state.graphs) { const g = state.graphs[n]; delete g[id]; for (const k in g) delete g[k][id]; }
+    if (selected === id) selected = null;
+  }
+  function incomingTo(id) { const g = graph(), out = []; for (const k in g) if (g[k][id] !== undefined) out.push(k); return out; }
+
+  // Rebuilds an object with one key renamed, keeping key order.
+  function renameKey(obj, from, to) {
+    const out = {};
+    for (const k in obj) out[k === from ? to : k] = obj[k];
+    return out;
+  }
+  function renameLocation(from, to) {
+    state.locations = renameKey(state.locations, from, to);
+    for (const n in state.graphs) {
+      let g = renameKey(state.graphs[n], from, to);
+      for (const k in g) g[k] = renameKey(g[k], from, to);
+      state.graphs[n] = g;
+    }
+    const f = floorOf(to);
+    if (!state.floors.includes(f)) state.floors.push(f);
+    if (selected === from) selected = to;
+  }
+
+  // Finds a free spot on a floor, on a loose grid, avoiding existing spots.
+  function freePos(f) {
+    const taken = Object.keys(state.locations).filter((id) => floorOf(id) === f).map((id) => state.locations[id]);
+    for (let y = 110; y <= BAND_H - 110; y += 90) {
+      for (let x = 80; x <= W - 80; x += 110) {
+        if (taken.every((p) => Math.hypot(p.x - x, p.y - y) > 50)) return { x, y };
+      }
+    }
+    return { x: 80 + Math.random() * (W - 160), y: 80 + Math.random() * (BAND_H - 160) };
+  }
+  function addLocation(id) {
+    state.locations[id] = freePos(floorOf(id));
+    const f = floorOf(id);
+    if (!state.floors.includes(f)) state.floors.push(f);
+  }
+
+  // Accepts: one per line, comma separated, quoted strings, or PackedStringArray([...]).
+  function parseSpotNames(text) {
+    const cleaned = text
+      .split("\n").map((l) => l.replace(/#.*$/, "")).join("\n")
+      .replace(/\b[A-Za-z_]+\.nodes\s*=/g, " ")     // "l.nodes ="
+      .replace(/PackedStringArray/g, " ")
+      .replace(/["'\[\]()]/g, " ");
+    return cleaned.split(/[\s,;]+/).map((x) => x.trim()).filter(Boolean);
+  }
+
+  // ==================================================================
+  // Map rendering
+  // ==================================================================
+  function el(tag, attrs, parent) {
+    const n = document.createElementNS(SVG_NS, tag);
+    for (const k in attrs) n.setAttribute(k, attrs[k]);
+    if (parent) parent.appendChild(n);
+    return n;
+  }
+
+  function renderMap() {
+    const g = graph();
+    const fl = floors();
+    const totalH = view === "all" ? fl.length * (BAND_H + GAP) - GAP : BAND_H;
+    svg.setAttribute("viewBox", `0 0 ${W} ${totalH}`);
+    svg.classList.toggle("connecting", connectMode);
+    svg.textContent = "";
+
+    const defs = el("defs", {}, svg);
+    const pat = el("pattern", { id: "grid", width: 20, height: 20, patternUnits: "userSpaceOnUse" }, defs);
+    el("path", { d: "M 20 0 L 0 0 0 20", fill: "none", style: "stroke: var(--grid)", "stroke-width": 1 }, pat);
+    for (const kind of ["norm", "hi", "in", "dim"]) {
+      const m = el("marker", { id: "arrow-" + kind, viewBox: "0 0 10 10", refX: 9, refY: 5, markerWidth: 7, markerHeight: 7, orient: "auto" }, defs);
+      el("path", { d: "M0,0 L10,5 L0,10 z", class: "arrow-" + kind }, m);
+    }
+
+    // Floor bands
+    const shownFloors = view === "all" ? fl : [view];
+    for (const f of shownFloors) {
+      const top = bandTop(f);
+      el("rect", { x: 0, y: top, width: W, height: BAND_H, fill: "url(#grid)" }, svg);
+      const t = el("text", { x: 16, y: top + 28, class: "band-label" }, svg);
+      t.textContent = "Floor " + f;
+      if (view !== "all") {
+        el("line", { x1: 0, y1: 56, x2: W, y2: 56, class: "band-edge" }, svg);
+        el("line", { x1: 0, y1: BAND_H - 56, x2: W, y2: BAND_H - 56, class: "band-edge" }, svg);
+      }
+      if (!Object.keys(state.locations).some((id) => floorOf(id) === f)) {
+        const e = el("text", { x: W / 2, y: top + BAND_H / 2, "text-anchor": "middle", class: "band-empty" }, svg);
+        e.textContent = `No spots yet. Add some named F${f}_… in the Spots panel.`;
+      }
+    }
+
+    const ghosts = ghostSet();
+    const pos = {};
+    for (const id in state.locations) { const p = dispPos(id, ghosts); if (p) pos[id] = p; }
+    // Spread ghosts along the edge so their labels never overlap
+    for (const edgeY of [28, BAND_H - 28]) {
+      const row = Object.keys(pos).filter((id) => pos[id].ghost && pos[id].y === edgeY).sort((a, b) => pos[a].x - pos[b].x);
+      for (let i = 1; i < row.length; i++) {
+        const prev = pos[row[i - 1]], cur = pos[row[i]];
+        if (cur.x < prev.x + 130) pos[row[i]] = { ...cur, x: prev.x + 130 };
+      }
+    }
+
+    // Edges
+    const edgeLayer = el("g", {}, svg), labelLayer = el("g", {}, svg);
+    for (const from in g) {
+      const outs = g[from];
+      const total = Object.values(outs).reduce((a, b) => a + Math.max(0, Number(b) || 0), 0);
+      for (const to in outs) {
+        const a = pos[from], b = pos[to];
+        if (!a || !b || (a.ghost && b.ghost)) continue;
+        const w = Number(outs[to]) || 0;
+        const dx = b.x - a.x, dy = b.y - a.y, len = Math.hypot(dx, dy) || 1;
+        const ux = dx / len, uy = dy / len, nx = -uy, ny = ux;
+        const off = g[to] && g[to][from] !== undefined ? 14 : 0;
+        const sx = a.x + ux * (R + 2), sy = a.y + uy * (R + 2);
+        const ex = b.x - ux * (R + 4), ey = b.y - uy * (R + 4);
+        const mx = (sx + ex) / 2, my = (sy + ey) / 2;
+        const cx = mx + nx * off * 2, cy = my + ny * off * 2;
+        const lx = mx + nx * off, ly = my + ny * off;
+
+        let kind = "norm";
+        if (selected) kind = from === selected ? "hi" : to === selected ? "in" : "dim";
+        el("path", {
+          d: `M${sx},${sy} Q${cx},${cy} ${ex},${ey}`,
+          class: "edge" + (kind !== "norm" ? " " + kind : "") + (w === 0 ? " zero" : ""),
+          "marker-end": `url(#arrow-${kind})`
+        }, edgeLayer);
+
+        const pct = total > 0 ? Math.round((Math.max(0, w) / total) * 100) : 0;
+        const text = kind === "hi" ? `${w} (${pct}%)` : String(w);
+        const tw = text.length * 6.4 + 10;
+        const lg = el("g", { class: "wlabel" + (kind === "hi" ? " hi" : kind === "dim" ? " dim" : "") }, labelLayer);
+        el("rect", { x: lx - tw / 2, y: ly - 9, width: tw, height: 18, rx: 9 }, lg);
+        const tt = el("text", { x: lx, y: ly + 4, "text-anchor": "middle" }, lg);
+        tt.textContent = text;
+      }
+    }
+
+    // Spots
+    const nodeLayer = el("g", {}, svg);
+    for (const id in pos) {
+      const p = pos[id];
+      const inGraph = g[id] !== undefined;
+      const isStop = inGraph && Object.keys(g[id]).length === 0;
+      const cls = ["node", p.ghost ? "ghost" : inGraph ? "in" : "out", !p.ghost && isStop ? "stop" : "", selected === id ? "sel" : ""].join(" ").replace(/\s+/g, " ").trim();
+      const ng = el("g", { class: cls, "data-node": id, tabindex: 0, role: "button", "aria-label": id }, nodeLayer);
+      if (p.ghost) ng.setAttribute("data-ghost", "1");
+      el("rect", { x: p.x - 34, y: p.y - 18, width: 68, height: 50, class: "hit" }, ng);
+      if ((isStop && !p.ghost) || selected === id) el("circle", { cx: p.x, cy: p.y, r: R + 5, class: "ring" }, ng);
+      el("circle", { cx: p.x, cy: p.y, r: p.ghost ? R - 2 : R, class: "dot" }, ng);
+      const t = el("text", { x: p.x, y: p.y + R + 16, "text-anchor": "middle" }, ng);
+      t.textContent = p.ghost ? `${floorOf(id) > view ? "↑" : "↓"} F${floorOf(id)} ${short(id)}` : short(id);
+    }
+  }
+
+  // ==================================================================
+  // Panel rendering
+  // ==================================================================
+  function renderTabs() {
+    const tabs = $("tabs");
+    tabs.textContent = "";
+    for (const name of Object.keys(state.graphs)) {
+      const b = document.createElement("button");
+      b.className = "tab";
+      b.textContent = name;
+      b.setAttribute("aria-pressed", String(name === current));
+      b.addEventListener("click", () => { current = name; selected = null; render(); });
+      tabs.appendChild(b);
+    }
+    $("studentTitle").textContent = current;
+    $("delGraphBtn").textContent = `Delete ${current}'s graph`;
+  }
+
+  function renderFloorbar() {
+    const bar = $("floorbar");
+    bar.textContent = "";
+    const lbl = document.createElement("span");
+    lbl.className = "lbl"; lbl.textContent = "Show";
+    bar.appendChild(lbl);
+    const mk = (text, val, pressed) => {
+      const b = document.createElement("button");
+      b.className = "tab"; b.textContent = text;
+      b.setAttribute("aria-pressed", String(pressed));
+      b.addEventListener("click", () => { view = val; render(); $("canvasWrap").scrollTop = 0; });
+      bar.appendChild(b);
+    };
+    mk("All floors", "all", view === "all");
+    for (const f of floors()) mk("Floor " + f, f, view === f);
+
+    const add = document.createElement("button");
+    add.className = "tab add"; add.textContent = "+ Floor";
+    add.addEventListener("click", () => {
+      const next = Math.max(...floors()) + 1;
+      state.floors.push(next);
+      view = next;
+      toast(`Added floor ${next}. Add spots named F${next}_… in the Spots panel.`);
+      changed();
+    });
+    bar.appendChild(add);
+
+    if (view !== "all" && !Object.keys(state.locations).some((id) => floorOf(id) === view)) {
+      const rm = document.createElement("button");
+      rm.className = "btn danger"; rm.textContent = `Remove floor ${view}`; rm.style.marginLeft = "8px";
+      rm.addEventListener("click", () => {
+        state.floors = state.floors.filter((f) => f !== view);
+        view = floors().includes(1) ? 1 : floors()[0];
+        changed();
+      });
+      bar.appendChild(rm);
+    }
+  }
+
+  function optionsByFloor(exclude) {
+    let html = "";
+    for (const f of floors()) {
+      const ids = Object.keys(state.locations).filter((id) => floorOf(id) === f && !exclude(id));
+      if (ids.length) html += `<optgroup label="Floor ${f}">${ids.map((o) => `<option>${esc(o)}</option>`).join("")}</optgroup>`;
+    }
+    return html;
+  }
+
+  function renderNodePanel() {
+    const sec = $("nodeSection");
+    if (!selected || !state.locations[selected]) {
+      sec.innerHTML = `<h2>${esc(current)}</h2><p class="muted">Select a spot on the map to see and edit where ${esc(current)} can go from there.</p>`;
+      return;
+    }
+    const g = graph(), id = selected, inGraph = g[id] !== undefined;
+    let html = `<h2><span class="node-name">${esc(id)}</span></h2>`;
+
+    if (!inGraph) {
+      html += `<p class="muted">${esc(current)} never comes here.</p>
+        <div class="row-btns"><button class="btn primary" data-act="join">Add to ${esc(current)}'s graph</button></div>`;
+    } else {
+      const outs = g[id], keys = Object.keys(outs);
+      const total = keys.reduce((a, k) => a + Math.max(0, Number(outs[k]) || 0), 0);
+      if (!keys.length) html += `<p class="muted">Stop spot: ${esc(current)} stays here once he arrives. Right for the office door, a bug anywhere else.</p>`;
+      else {
+        html += `<p class="muted">From here ${esc(current)} can go to:</p><ul class="edges">`;
+        for (const k of keys) {
+          const w = Number(outs[k]) || 0;
+          const pct = total > 0 ? Math.round((Math.max(0, w) / total) * 100) : 0;
+          const back = g[k] && g[k][id] !== undefined;
+          html += `<li class="erow${flashTarget === k ? " flash" : ""}">
+            <button class="to" data-go="${esc(k)}" title="Select ${esc(k)}">${esc(k)}</button>
+            <span class="ctrl">
+              <button data-dec="${esc(k)}" aria-label="Lower weight">−</button>
+              <input type="number" min="0" step="1" value="${w}" data-w="${esc(k)}" aria-label="Weight to ${esc(k)}">
+              <button data-inc="${esc(k)}" aria-label="Raise weight">+</button>
+            </span>
+            <span class="bar-wrap"><span class="pct-bar"><span style="width:${pct}%"></span></span><span class="pct">${pct}%</span></span>
+            <span class="extras">
+              ${back ? `<span class="muted" style="margin:0">Also goes back</span>` : `<button class="linkish" data-back="${esc(k)}">Add way back</button>`}
+              <button class="linkish red" data-del="${esc(k)}">Remove</button>
+            </span>
+          </li>`;
+        }
+        html += `</ul>`;
+      }
+      html += `<div class="add-row">
+          <select id="addTarget" aria-label="Add a place to go"><option value="">Add a place to go…</option>${optionsByFloor((k) => k === id || outs[k] !== undefined)}</select>
+          <button class="btn" data-act="addTarget">Add</button>
+        </div>`;
+      const inc = incomingTo(id);
+      html += `<p class="muted" style="margin-top:12px">Comes here from: ${inc.length ? "" : "nowhere yet"}</p>`;
+      if (inc.length) html += `<div class="chips">${inc.map((k) => `<button class="chip" data-go="${esc(k)}">${esc(k)}</button>`).join("")}</div>`;
+      html += `<div class="row-btns"><button class="btn danger" data-act="leave">Remove from ${esc(current)}'s graph</button></div>`;
+    }
+    html += `<div class="rename-row">
+        <input id="renameInput" value="${esc(id)}" aria-label="Rename spot">
+        <button class="btn" data-act="rename">Rename</button>
+      </div>
+      <div class="row-btns"><button class="btn danger" data-act="delLoc">Delete spot everywhere</button></div>`;
+    sec.innerHTML = html;
+    flashTarget = null;
+  }
+
+  function renderChecks() {
+    const g = graph();
+    const stops = Object.keys(g).filter((k) => Object.keys(g[k]).length === 0);
+    const noWayIn = Object.keys(g).filter((k) => incomingTo(k).length === 0);
+    const missing = Object.keys(g).filter((k) => !state.locations[k]);
+    const chips = (list, red) => `<div class="chips">${list.map((k) => `<button class="chip${red ? " red" : ""}" data-go="${esc(k)}">${esc(k)}</button>`).join("")}</div>`;
+    let html = `<div class="check-group"><p>Stop spots (${stops.length}): ${esc(current)} gets stuck here.</p>${stops.length ? chips(stops, true) : `<p class="muted">None</p>`}</div>`;
+    html += `<div class="check-group"><p>No way in (${noWayIn.length}): only reachable as a starting spot.</p>${noWayIn.length ? chips(noWayIn) : `<p class="muted">None</p>`}</div>`;
+    if (missing.length) html += `<div class="check-group"><p class="msg bad">Not in the spot list: ${missing.map(esc).join(", ")}</p></div>`;
+    $("checks").innerHTML = html;
+  }
+
+  // ==================================================================
+  // Export / import
+  // ==================================================================
+  function exportGraph() {
+    const g = graph(), keys = Object.keys(g);
+    const pad = Math.max(0, ...keys.map((k) => k.length + 3));
+    const lines = keys.map((k) => {
+      const inner = Object.keys(g[k]).map((t) => `"${t}": ${Number(g[k][t]) || 0}`).join(", ");
+      return `\t\t${(`"${k}":`).padEnd(pad)} {${inner}},`;
+    });
+    return `\tg.nodes = {\n${lines.join("\n")}\n\t}`;
+  }
+  function exportLocations() {
+    const lines = [];
+    for (const f of floors()) {
+      const ids = Object.keys(state.locations).filter((id) => floorOf(id) === f);
+      if (!ids.length) continue;
+      lines.push(`\t\t# --- Floor ${f} ---`);
+      lines.push("\t\t" + ids.map((id) => `"${id}",`).join(" "));
+    }
+    return `\tl.nodes = PackedStringArray([\n${lines.join("\n")}\n\t])`;
+  }
+  function renderExport() {
+    const kind = $("exportKind").value;
+    $("exportKind").options[0].textContent = `${current}'s graph (g.nodes = …)`;
+    $("exportText").value = kind === "graph" ? exportGraph() : kind === "locations" ? exportLocations() : JSON.stringify(state, null, 2);
+    const d = new Date();
+    $("exportUpdated").textContent = `Updated ${d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}`;
+  }
+
+  function parseGdDict(text) {
+    const noComments = text.split("\n").map((l) => {
+      let inStr = false;
+      for (let i = 0; i < l.length; i++) {
+        if (l[i] === '"') inStr = !inStr;
+        else if (l[i] === "#" && !inStr) return l.slice(0, i);
+      }
+      return l;
+    }).join("\n");
+    const start = noComments.indexOf("{"), end = noComments.lastIndexOf("}");
+    if (start === -1 || end <= start) throw new Error("couldn't find a { … } block.");
+    return JSON.parse(noComments.slice(start, end + 1).replace(/,(\s*[}\]])/g, "$1"));
+  }
+
+  function doImport() {
+    const text = $("importText").value.trim();
+    if (!text) { setMsg("importMsg", "Paste something to import first.", "bad"); return; }
+    let data;
+    try { data = parseGdDict(text); }
+    catch (e) { setMsg("importMsg", "Couldn't read that: " + e.message, "bad"); return; }
+
+    if (data && data.graphs && data.locations) {
+      loadInto(data);
+      setMsg("importMsg", "Full file imported.", "good");
+      changed(); return;
+    }
+    const g = {}, added = [];
+    for (const from in data) {
+      const outs = data[from];
+      if (typeof outs !== "object" || outs === null || Array.isArray(outs)) { setMsg("importMsg", `"${from}" should map to { … }.`, "bad"); return; }
+      g[from] = {};
+      for (const to in outs) {
+        const w = Number(outs[to]);
+        if (!Number.isFinite(w)) { setMsg("importMsg", `Weight from "${from}" to "${to}" isn't a number.`, "bad"); return; }
+        g[from][to] = w;
+        if (!g[to] && !data[to]) g[to] = {};
+      }
+    }
+    for (const id of Object.keys(g)) {
+      if (!NAME_RE.test(id)) { setMsg("importMsg", `"${id}" needs a floor prefix like F1_.`, "bad"); return; }
+      if (!state.locations[id]) { addLocation(id); added.push(id); }
+    }
+    state.graphs[current] = g;
+    selected = null;
+    setMsg("importMsg", `Replaced ${current}'s graph (${Object.keys(g).length} spots).` + (added.length ? ` New spots: ${added.join(", ")}.` : ""), "good");
+    changed();
+  }
+
+  async function copyExport() {
+    const ta = $("exportText");
+    try { await navigator.clipboard.writeText(ta.value); setMsg("copyMsg", "Copied.", "good"); }
+    catch {
+      ta.focus(); ta.select();
+      let ok = false;
+      try { ok = document.execCommand("copy"); } catch { ok = false; }
+      setMsg("copyMsg", ok ? "Copied." : "Text is selected: press Ctrl+C to copy.", ok ? "good" : "bad");
+    }
+  }
+
+  // ==================================================================
+  // Render all
+  // ==================================================================
+  function render() {
+    renderTabs();
+    renderFloorbar();
+    renderMap();
+    renderNodePanel();
+    renderChecks();
+    renderExport();
+    $("connectBtn").setAttribute("aria-pressed", String(connectMode));
+  }
+
+  // ==================================================================
+  // Map interaction
+  // ==================================================================
+  function svgPoint(evt) {
+    const pt = svg.createSVGPoint();
+    pt.x = evt.clientX; pt.y = evt.clientY;
+    const m = svg.getScreenCTM();
+    return m ? pt.matrixTransform(m.inverse()) : { x: 0, y: 0 };
+  }
+
+  function goTo(id) {
+    if (view !== "all" && floorOf(id) !== view) view = floorOf(id);
+    selected = id;
+  }
+
+  let press = null;
+  svg.addEventListener("pointerdown", (e) => {
+    if (e.button !== 0) return;
+    const n = e.target.closest("[data-node]");
+    press = { id: n ? n.getAttribute("data-node") : null, ghost: !!(n && n.hasAttribute("data-ghost")), sx: e.clientX, sy: e.clientY, moved: false, shift: e.shiftKey };
+    if (n) e.preventDefault();
+  });
+
+  window.addEventListener("pointermove", (e) => {
+    if (!press || !press.id || press.ghost) return;
+    if (!press.moved && Math.hypot(e.clientX - press.sx, e.clientY - press.sy) < 8) return;
+    press.moved = true;
+    const p = svgPoint(e);
+    const loc = state.locations[press.id];
+    loc.x = clampX(p.x);
+    loc.y = clampY(p.y - bandTop(floorOf(press.id)));
+    renderMap();
+  });
+
+  window.addEventListener("pointerup", (e) => {
+    if (!press) return;
+    const p = press; press = null;
+    if (!p.id) {
+      if (!connectMode && e.target.closest && e.target.closest("svg") === svg) { selected = null; render(); }
+      return;
+    }
+    if (p.moved) { changed(); return; }
+    handleNodeClick(p.id, p.shift || e.shiftKey, p.ghost);
+  });
+  window.addEventListener("pointercancel", () => { press = null; });
+
+  function handleNodeClick(id, shift, ghost) {
+    const connecting = shift || connectMode;
+    if (connecting && selected && selected !== id) {
+      const r = addEdge(selected, id);
+      toast(r === "added" ? `Added path ${short(selected)} to ${id} for ${current}.` : `${short(selected)} already goes to ${short(id)}. Change its weight in the panel.`);
+      changed();
+      return;
+    }
+    if (ghost) { goTo(id); toast(`Floor ${floorOf(id)}`); render(); return; }
+    selected = id;
+    if (connectMode) toast(`Connecting from ${short(id)}: click where ${current} can go next.`);
+    render();
+  }
+
+  svg.addEventListener("keydown", (e) => {
+    const n = e.target.closest("[data-node]");
+    if (n && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); handleNodeClick(n.getAttribute("data-node"), e.shiftKey, n.hasAttribute("data-ghost")); }
+  });
+
+  function isTyping(t) { return t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT"); }
+  document.addEventListener("keydown", (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") { e.preventDefault(); saveFile(); return; }
+    if (isTyping(e.target)) return;
+    if (e.key === "Escape") { selected = null; connectMode = false; toast(""); render(); return; }
+    const moves = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
+    if (selected && moves[e.key] && state.locations[selected]) {
+      e.preventDefault();
+      const step = e.shiftKey ? 20 : 5, [dx, dy] = moves[e.key], p = state.locations[selected];
+      p.x = clampX(p.x + dx * step); p.y = clampY(p.y + dy * step);
+      changed();
+    }
+  });
+
+  $("connectBtn").addEventListener("click", () => {
+    connectMode = !connectMode;
+    toast(connectMode ? (selected ? `Connecting from ${short(selected)}: click where ${current} can go next.` : "Click a starting spot, then the spots it leads to.") : "");
+    render();
+  });
+
+  // ==================================================================
+  // Panel interaction
+  // ==================================================================
+  const armed = new WeakMap();
+  function confirmClick(btn, label) {
+    if (armed.get(btn)) return true;
+    armed.set(btn, true);
+    const old = btn.textContent;
+    btn.textContent = label; btn.classList.add("armed");
+    setTimeout(() => { if (btn.isConnected) { btn.textContent = old; btn.classList.remove("armed"); armed.delete(btn); } }, 3000);
+    return false;
+  }
+
+  $("panel").addEventListener("click", (e) => {
+    const t = e.target.closest("button");
+    if (!t) return;
+    const g = graph(), d = t.dataset;
+    if (d.go) { goTo(d.go); render(); return; }
+    if (d.inc) { g[selected][d.inc] = (Number(g[selected][d.inc]) || 0) + 1; changed(); return; }
+    if (d.dec) { g[selected][d.dec] = Math.max(0, (Number(g[selected][d.dec]) || 0) - 1); changed(); return; }
+    if (d.back) { addEdge(d.back, selected); flashTarget = null; changed(); return; }
+    if (d.del) { delete g[selected][d.del]; changed(); return; }
+    if (d.act === "join") { g[selected] = {}; changed(); return; }
+    if (d.act === "leave") { if (confirmClick(t, "Click again to remove")) { removeFromGraph(selected); changed(); } return; }
+    if (d.act === "delLoc") { if (confirmClick(t, "Click again to delete")) { deleteLocation(selected); changed(); } return; }
+    if (d.act === "addTarget") { const v = $("addTarget").value; if (v) { addEdge(selected, v); changed(); } return; }
+    if (d.act === "rename") {
+      const to = $("renameInput").value.trim();
+      if (to === selected) return;
+      if (!NAME_RE.test(to)) { toast("Spot names need a floor prefix, like F2_Library.", true); return; }
+      if (state.locations[to]) { toast(`${to} already exists.`, true); return; }
+      const from = selected;
+      renameLocation(from, to);
+      if (view !== "all") view = floorOf(to);
+      toast(`Renamed ${from} to ${to} in every graph.`);
+      changed();
+    }
+  });
+
+  // Weight inputs update live while typing, not only when leaving the field
+  $("panel").addEventListener("input", (e) => {
+    const inp = e.target;
+    if (inp.dataset && inp.dataset.w !== undefined && selected && inp.value !== "") {
+      graph()[selected][inp.dataset.w] = Math.max(0, Number(inp.value) || 0);
+      touched = true;
+      clearTimeout(saveTimer); saveTimer = setTimeout(save, 700);
+      renderMap(); renderExport();
+    }
+  });
+  $("panel").addEventListener("change", (e) => {
+    const inp = e.target;
+    if (inp.dataset && inp.dataset.w !== undefined) changed();
+    if (inp.id === "exportKind") renderExport();
+  });
+
+
+  $("copyBtn").addEventListener("click", copyExport);
+  $("importBtn").addEventListener("click", doImport);
+
+  // Students
+  $("addStudentBtn").addEventListener("click", () => {
+    const box = $("addStudentBox");
+    box.classList.toggle("open");
+    if (box.classList.contains("open")) $("newGraphName").focus();
+  });
+  function addStudent() {
+    const name = $("newGraphName").value.trim();
+    if (!name) { toast("Type a name for the student first.", true); return; }
+    if (state.graphs[name]) { toast(`${name} already has a graph.`, true); return; }
+    state.graphs[name] = {};
+    current = name; selected = null;
+    $("newGraphName").value = "";
+    $("addStudentBox").classList.remove("open");
+    toast(`Added ${name}. Click a spot and use "Add to ${name}'s graph" to start.`);
+    changed();
+  }
+  $("addGraphBtn").addEventListener("click", addStudent);
+  $("newGraphName").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") addStudent();
+    if (e.key === "Escape") { e.stopPropagation(); $("addStudentBox").classList.remove("open"); }
+  });
+  $("delGraphBtn").addEventListener("click", (e) => {
+    if (Object.keys(state.graphs).length <= 1) { setMsg("graphMsg", "Keep at least one student.", "bad"); return; }
+    if (!confirmClick(e.currentTarget, `Click again to delete ${current}`)) return;
+    delete state.graphs[current];
+    current = Object.keys(state.graphs)[0];
+    selected = null;
+    setMsg("graphMsg", "Deleted.", "good");
+    changed();
+  });
+
+  // Spots
+  $("addNodeBtn").addEventListener("click", () => {
+    const name = $("newNodeName").value.trim();
+    if (!NAME_RE.test(name)) { setMsg("nodeMsg", "Use a floor prefix, like F1_Library or F0_FabLab.", "bad"); return; }
+    if (state.locations[name]) { setMsg("nodeMsg", `${name} already exists.`, "bad"); return; }
+    addLocation(name);
+    if (view !== "all") view = floorOf(name);
+    selected = name;
+    $("newNodeName").value = "";
+    setMsg("nodeMsg", `Added ${name}. Drag it into place.`, "good");
+    changed();
+  });
+  $("newNodeName").addEventListener("keydown", (e) => { if (e.key === "Enter") $("addNodeBtn").click(); });
+
+  $("bulkSpotsBtn").addEventListener("click", () => {
+    const names = parseSpotNames($("bulkSpots").value);
+    if (!names.length) { setMsg("nodeMsg", "Paste some spot names first.", "bad"); return; }
+    const added = [], existed = [], bad = [];
+    for (const n of names) {
+      if (!NAME_RE.test(n)) bad.push(n);
+      else if (state.locations[n]) existed.push(n);
+      else { addLocation(n); added.push(n); }
+    }
+    let text = `Added ${added.length} spot${added.length === 1 ? "" : "s"}.`;
+    if (existed.length) text += ` ${existed.length} already existed.`;
+    if (bad.length) text += ` Skipped (need a floor prefix like F2_): ${bad.join(", ")}.`;
+    setMsg("nodeMsg", text, bad.length ? "bad" : "good");
+    if (added.length) {
+      $("bulkSpots").value = "";
+      const f = floorOf(added[0]);
+      if (view !== "all") view = f;
+      toast(`New spots are laid out in a grid on floor ${f}. Drag them into place.`);
+    }
+    changed();
+  });
+
+  // ==================================================================
+  // File save / open
+  // ==================================================================
+  let fileHandle = null;
+  async function saveFile() {
+    const text = JSON.stringify(state, null, 2);
+    try {
+      if (window.showSaveFilePicker && window.top === window.self) {
+        if (!fileHandle) {
+          fileHandle = await window.showSaveFilePicker({
+            suggestedName: "student_paths.json",
+            types: [{ description: "Student paths", accept: { "application/json": [".json"] } }]
+          });
+        }
+        const w = await fileHandle.createWritable();
+        await w.write(text); await w.close();
+        setMsg("fileMsg", `Saved to ${fileHandle.name}. Ctrl+S saves again.`, "good");
+        return;
+      }
+    } catch (e) { if (e && e.name === "AbortError") return; }
+    try {
+      const dl = window.claude && window.claude.use ? await window.claude.use("downloads") : null;
+      if (dl) { await dl.save({ filename: "student_paths.json", data: text }); setMsg("fileMsg", "Saved student_paths.json.", "good"); return; }
+    } catch { setMsg("fileMsg", "Download was cancelled.", "bad"); return; }
+    try {
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(new Blob([text], { type: "application/json" }));
+      a.download = "student_paths.json";
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+      setMsg("fileMsg", "Downloaded student_paths.json.", "good");
+    } catch { setMsg("fileMsg", "Couldn't save here. Copy the full file from Export instead.", "bad"); }
+  }
+  $("saveFileBtn").addEventListener("click", saveFile);
+  $("openFileBtn").addEventListener("click", () => $("fileInput").click());
+  $("fileInput").addEventListener("change", async (e) => {
+    const f = e.target.files && e.target.files[0];
+    e.target.value = "";
+    if (!f) return;
+    try {
+      const data = JSON.parse(await f.text());
+      if (!loadInto(data)) throw new Error();
+      fileHandle = null;
+      setMsg("fileMsg", `Opened ${f.name}.`, "good");
+      changed();
+    } catch { setMsg("fileMsg", `${f.name} isn't a student paths file. Use one saved from this tool.`, "bad"); }
+  });
+
+  // ==================================================================
+  state = migrate(clone(DEFAULT_V1));
+  render();
+  initStorage();
+})();
+</script>
+</body>
+</html>

@@ -7,6 +7,7 @@
 [ext_resource type="Script" uid="uid://bv8lx82wwbcep" path="res://scripts/animatronic.gd" id="3_o60qq"]
 [ext_resource type="Resource" uid="uid://swaw8j4i0o4v" path="res://data/graphs/graph_bees.tres" id="4_s11eh"]
 [ext_resource type="Texture2D" uid="uid://bmg3pvwsem5bc" path="res://icon.svg" id="5_rfwdb"]
+[ext_resource type="Script" uid="uid://ciwcfy44imxev" path="res://scripts/dev/generate_graphs.gd" id="8_rfwdb"]
 
 [node name="Night" type="Node2D" unique_id=167903392]
 script = ExtResource("1_7dt87")
@@ -24,3 +25,4 @@ placeholder_texture = ExtResource("5_rfwdb")
 [node name="CameraSystem" parent="." unique_id=839633045 instance=ExtResource("2_o60qq")]
 
 [node name="Node" type="Node" parent="." unique_id=494318151]
+script = ExtResource("8_rfwdb")

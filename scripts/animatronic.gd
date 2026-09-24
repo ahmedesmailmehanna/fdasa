@@ -3,7 +3,7 @@ class_name Animatronic
 
 # --- Set these in the Inspector ---
 @export var student_id: Students.Id          # which student this node is
-@export var graph: CameraGraph               # the map this student walks
+@export var graph: StudentGraph               # the map this student walks
 @export var starting_node: String            # e.g. "F2_Bathroom"
 @export var move_interval_min := 2.0         # seconds, shortest wait
 @export var move_interval_max := 5.0         # seconds, longest wait

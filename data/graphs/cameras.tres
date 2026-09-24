@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="CameraMap" format=3]
+
+[ext_resource type="Script" path="res://scripts/camera_map.gd" id="1_3d42r"]
+
+[resource]
+script = ExtResource("1_3d42r")
+cameras = {
+"F1_CAM_Biology": ["F1_BiologyLab", "F1_HallR3"],
+"F1_CAM_Chemistry": ["F1_ChemistryLab", "F1_HallL3"],
+"F1_CAM_HallL": ["F1_HallL2", "F1_AtriumL"],
+"F1_CAM_HallR": ["F1_HallR2", "F1_AtriumR"],
+"F1_CAM_StairsL": ["F1_StairsL", "F1_HallL1"],
+"F1_CAM_StairsR": ["F1_StairsR", "F1_HallR1"]
+}

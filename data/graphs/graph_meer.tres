@@ -1,9 +1,9 @@
-[gd_resource type="Resource" script_class="CameraGraph" format=3]
+[gd_resource type="Resource" script_class="StudentGraph" format=3]
 
-[ext_resource type="Script" path="res://scripts/camera_graph.gd" id="1_faatk"]
+[ext_resource type="Script" path="res://scripts/student_graph.gd" id="1_shykb"]
 
 [resource]
-script = ExtResource("1_faatk")
+script = ExtResource("1_shykb")
 nodes = {
 "F1_1D": {
 "F1_HallR1": 1
