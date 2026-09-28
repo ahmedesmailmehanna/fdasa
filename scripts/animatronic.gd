@@ -10,7 +10,6 @@ class_name Animatronic
 # The "stay" weight rolled against aggression. Higher = lazier student.
 # 10 means aggression 10 is a 50/50 chance to move.
 @export var stay_weight := 10.0
-@export var placeholder_texture: Texture2D   # icon.svg for now
 
 # --- Set by the night from the config, not in the Inspector ---
 # 0 = disabled, 1..20 = difficulty
@@ -87,10 +86,23 @@ func _attempt_move() -> void:
 
 	_schedule_next_move()
 
-# Called by GameManager (via get_camera_overlay) when CameraSystem wants to
-# know what this student looks like on a given camera.
-# Input: which node/camera is asking (unused for now — every camera gets the
-#        same placeholder texture until you have real per-pose art)
-# Output: a Texture2D to draw on top of that camera's background
-func get_frame_for(_node_id: String) -> Texture2D:
-	return placeholder_texture
+# Where this student's overlays live. Must match build_asset_layout.gd.
+#   e.g. res://assets/students/bees/F1_CAM_HallL/F1_AtriumL.png
+const STUDENT_ART := "res://assets/students/%s/%s/%s.png"
+
+var _frame_cache: Dictionary = {}   # path -> Texture2D or null (missing)
+
+# Called by CameraSystem when a camera that sees this student's spot is shown.
+# Input: the camera being viewed and the spot the student is on,
+#        e.g. ("F1_CAM_HallL", "F1_AtriumL")
+# Output: the overlay texture, or null if that PNG doesn't exist yet
+#         (CameraSystem then lists the student as "no art yet").
+func get_frame_for(camera_id: String, spot_id: String) -> Texture2D:
+	var path := STUDENT_ART % [get_art_name(), camera_id, spot_id]
+	if not _frame_cache.has(path):
+		_frame_cache[path] = load(path) if ResourceLoader.exists(path) else null
+	return _frame_cache[path]
+
+# Output: this student's asset folder name, e.g. Students.Id.BEES -> "bees"
+func get_art_name() -> String:
+	return Students.Id.keys()[student_id].to_lower()

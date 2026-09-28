@@ -3,9 +3,19 @@ class_name GameManager
 # class_name lets other scripts declare a variable AS a GameManager (not just a
 # generic Node), which is what fixes the type-inference error below.
 
-# Tracks which student (Animatronic) is currently standing on which graph node.
-# Key = node_id (String, e.g. "F1_Deputy"), Value = the Animatronic occupying it.
-var camera_occupants: Dictionary = {}
+# Fired after any student changes spot. CameraSystem listens to this so the
+# feed you're looking at updates live when someone walks in or out of view.
+signal student_moved(student: Animatronic, from_spot: String, to_spot: String)
+
+# Who is standing where. A spot can hold SEVERAL students at once
+# (Bees and Meer can both end up on F1_OfficeHall or a shared hallway).
+# Key = spot id (String, e.g. "F1_HallL2"), Value = Array of Animatronic
+var occupants: Dictionary = {}
+
+# The reverse lookup: which spot each student is on.
+# Key = Animatronic, Value = spot id. Lets us find a student's old spot
+# without searching every spot.
+var _spot_of: Dictionary = {}
 
 func _ready() -> void:
 	# Adds this node to a "group" — a tag any node can look up later with
@@ -14,30 +24,45 @@ func _ready() -> void:
 	add_to_group("game_manager")
 
 # Called once by an Animatronic when it first enters the scene.
-# Input: a reference to itself (a), and which node it's starting on.
+# Input: a reference to itself (a), and which spot it's starting on.
 # Output: nothing — just records the starting position.
-func register_animatronic(a: Animatronic, starting_node: String) -> void:
-	camera_occupants[starting_node] = a
+func register_animatronic(a: Animatronic, starting_spot: String) -> void:
+	_place(a, starting_spot)
 
 # Called every time an Animatronic finishes a move.
-# Input: which animatronic moved (a), and its new node id.
-# Output: nothing — updates the occupancy dictionary: removes it from its old
-# spot (wherever that was) and adds it at the new one.
-func on_animatronic_moved(a: Animatronic, new_node: String) -> void:
-	for id in camera_occupants.keys():
-		if camera_occupants[id] == a:
-			camera_occupants.erase(id)
-	camera_occupants[new_node] = a
+# Input: which animatronic moved (a), and its new spot id.
+# Output: nothing — moves it in the occupancy lists and tells listeners.
+func on_animatronic_moved(a: Animatronic, new_spot: String) -> void:
+	var old_spot: String = _spot_of.get(a, "")
+	_remove(a)
+	_place(a, new_spot)
+	student_moved.emit(a, old_spot, new_spot)
 
-# Called by CameraSystem when it wants to know what to draw on top of a
-# camera's background.
-# Input: a camera/node id, e.g. "F1_Deputy"
-# Output: a Texture2D if a student is standing there, otherwise null
-#         (null = "nobody here, don't draw an overlay").
-func get_camera_overlay(camera_id: String) -> Texture2D:
-	if camera_occupants.has(camera_id):
-		return camera_occupants[camera_id].get_frame_for(camera_id)
-	return null
+# Input: a spot id, e.g. "F1_HallL2"
+# Output: every student standing there right now (empty Array if nobody).
+#   e.g. get_students_at("F1_OfficeHall") -> [Bees, Meer]
+func get_students_at(spot: String) -> Array:
+	return occupants.get(spot, [])
+
+# Input: a student
+# Output: the spot it's on, or "" if it never registered.
+func get_spot_of(a: Animatronic) -> String:
+	return _spot_of.get(a, "")
+
+func _place(a: Animatronic, spot: String) -> void:
+	if not occupants.has(spot):
+		occupants[spot] = []
+	occupants[spot].append(a)
+	_spot_of[a] = spot
+
+func _remove(a: Animatronic) -> void:
+	var spot: String = _spot_of.get(a, "")
+	if spot == "":
+		return
+	occupants[spot].erase(a)
+	if occupants[spot].is_empty():
+		occupants.erase(spot)
+	_spot_of.erase(a)
 
 # --- Joe's music ------------------------------------------------------------
 

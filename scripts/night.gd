@@ -28,5 +28,4 @@ func _ready() -> void:
 
 	# --- Test setup (temporary) ---
 	test_student.graph = load("res://data/graphs/graph_bees.tres")
-	camera_system.show_camera(test_student.starting_node)
 	game_manager.start_music()   # remove once Joe has real behavior
