@@ -4,7 +4,8 @@ extends Node2D
 @export var test_config: NightConfig
 
 @onready var game_manager: GameManager = $GameManager
-@onready var camera_system: CameraSystem = $CameraSystem
+@onready var tablet: Tablet = $Tablet
+@onready var camera_system: CameraSystem = tablet.camera_system
 @onready var test_student: Animatronic = $BeesTest
 
 var config: NightConfig

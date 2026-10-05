@@ -1,6 +1,13 @@
 [gd_scene format=3 uid="uid://hq08objm7673"]
 
 [ext_resource type="Script" uid="uid://dmtuh5cjtlann" path="res://scripts/camera_system.gd" id="1_38il2"]
+[ext_resource type="Shader" uid="uid://6lfaithliu4s" path="res://shaders/static.gdshader" id="2_xpg4h"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_pu1xt"]
+shader = ExtResource("2_xpg4h")
+shader_parameter/intensity = 0.12
+shader_parameter/grain_resolution = Vector2(320, 180)
+shader_parameter/flicker_speed = 24.0
 
 [node name="CameraSystem" type="Control" unique_id=839633045]
 layout_mode = 3
@@ -29,13 +36,36 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 
+[node name="Static" type="ColorRect" parent="." unique_id=1181188652]
+unique_name_in_owner = true
+material = SubResource("ShaderMaterial_pu1xt")
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="CamName" type="Label" parent="." unique_id=1399674853]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 20.0
+offset_top = 16.0
+offset_right = 720.0
+offset_bottom = 72.0
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 8
+theme_override_font_sizes/font_size = 40
+text = "CAM"
+
 [node name="DebugInfo" type="Label" parent="." unique_id=1203348817]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 12.0
-offset_top = 12.0
-offset_right = 512.0
-offset_bottom = 212.0
+offset_left = 20.0
+offset_top = 84.0
+offset_right = 520.0
+offset_bottom = 284.0
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 6
 text = "CAM"
@@ -43,27 +73,30 @@ text = "CAM"
 [node name="FloorButtons" type="HBoxContainer" parent="." unique_id=730215906]
 unique_name_in_owner = true
 layout_mode = 1
-anchors_preset = 1
+anchors_preset = -1
 anchor_left = 1.0
-anchor_right = 1.0
-offset_left = -312.0
-offset_top = 12.0
-offset_right = -12.0
-offset_bottom = 52.0
-grow_horizontal = 0
-alignment = 2
-
-[node name="CameraButtons" type="HBoxContainer" parent="." unique_id=1560427731]
-unique_name_in_owner = true
-layout_mode = 1
-anchors_preset = 12
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 12.0
-offset_top = -52.0
-offset_right = -12.0
-offset_bottom = -12.0
-grow_horizontal = 2
+offset_left = -790.0
+offset_top = -610.0
+offset_right = -30.0
+offset_bottom = -560.0
+grow_horizontal = 0
 grow_vertical = 0
-alignment = 1
+alignment = 2
+
+[node name="CamMap" type="Control" parent="." unique_id=708171452]
+unique_name_in_owner = true
+clip_contents = true
+layout_mode = 1
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -790.0
+offset_top = -550.0
+offset_right = -30.0
+offset_bottom = -80.0
+grow_horizontal = 0
+grow_vertical = 0

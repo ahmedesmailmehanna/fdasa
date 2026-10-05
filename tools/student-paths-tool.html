@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Student paths</title>
+<title>Student paths & cameras</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Kalam:wght@400;700&display=swap" rel="stylesheet">
@@ -219,6 +219,51 @@ textarea {
 .updated { font-size: 12px; color: var(--pencil); margin-left: auto; }
 .rename-row { display: flex; gap: 6px; margin-top: 10px; }
 .rename-row input { flex: 1; min-width: 0; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); padding: 5px 8px; }
+:root { --cam: #B7791F; --cam-soft: #E3B872; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --cam: #F0B35A; --cam-soft: #8A6A35; } }
+:root[data-theme="dark"] { --cam: #F0B35A; --cam-soft: #8A6A35; }
+
+.modes { display: inline-flex; border: 1.5px solid var(--line); border-radius: 999px; padding: 2px; margin-right: 6px; }
+.modes button { border: 0; background: transparent; padding: 3px 12px; border-radius: 999px; cursor: pointer; }
+.modes button[aria-pressed="true"] { background: var(--graphite); color: var(--paper); }
+.group { display: contents; }
+.group[hidden] { display: none; }
+
+.cov { fill: none; stroke: var(--cam-soft); stroke-width: 1.5; stroke-dasharray: 5 4; }
+.cov.hi { stroke: var(--cam); stroke-width: 2.2; }
+.cov.dim { opacity: .3; }
+
+.node.blind circle.dot { fill: var(--paper); stroke: var(--faint); stroke-width: 2; stroke-dasharray: 3 3; }
+.node.blind text { fill: var(--pencil); }
+.node.seen circle.dot { fill: var(--graphite); stroke: var(--paper); stroke-width: 3; }
+.node.seenby circle.ring { fill: none; stroke: var(--cam); stroke-width: 3; }
+
+.cam { cursor: pointer; }
+.cam .body { fill: var(--cam); stroke: var(--paper); stroke-width: 2; }
+.cam .lens { fill: var(--cam); stroke: var(--paper); stroke-width: 2; }
+.cam .cam-ring { fill: none; stroke: var(--cam); stroke-width: 2.5; }
+.cam.dim { opacity: .45; }
+.cam-label { font-family: var(--hand); font-size: 15px; font-weight: 700; fill: var(--cam);
+  paint-order: stroke; stroke: var(--paper); stroke-width: 4px; stroke-linejoin: round; }
+.cam .hit { fill: transparent; }
+
+.panel h2 .cam-name { font-family: var(--hand); font-size: 22px; color: var(--cam); font-weight: 700; }
+.srow { display: grid; grid-template-columns: auto minmax(0,1fr) auto; gap: 8px; align-items: center; padding: 6px 8px; border-radius: 8px; background: var(--paper); }
+.srow .num { font-size: 12px; color: var(--pencil); width: 16px; text-align: right; }
+.srow .ctrl { display: flex; gap: 2px; }
+.srow .ctrl button { width: 26px; height: 26px; border: 1px solid var(--line); background: var(--panel); border-radius: 6px; cursor: pointer; padding: 0; }
+.srow .ctrl button:disabled { opacity: .35; cursor: default; }
+.artlist { margin: 6px 0 0; padding-left: 18px; font-size: 13px; }
+.artlist li { margin: 2px 0; }
+.chip.cam { color: var(--cam); border-color: var(--cam); }
+.floor-map { pointer-events: none; }
+.map-frame { fill: none; stroke: var(--ink); stroke-width: 2; stroke-dasharray: 8 6; pointer-events: none; }
+.adjusting { cursor: move; }
+.adjusting .node, .adjusting .cam { pointer-events: none; }
+.slider-row { display: grid; grid-template-columns: 70px 1fr 44px; gap: 8px; align-items: center; margin-top: 8px; font-size: 13px; }
+.slider-row input[type=range] { width: 100%; accent-color: var(--ink); }
+.slider-row output { color: var(--pencil); text-align: right; }
+.map-thumb { width: 100%; max-height: 120px; object-fit: contain; background: var(--paper); border: 1px solid var(--line); border-radius: 8px; margin-top: 4px; }
 </style>
 </head>
 <body>
@@ -226,24 +271,35 @@ textarea {
   <div class="board">
     <div class="bar">
       <h1>Student paths</h1>
-      <div class="tabs" id="tabs" role="group" aria-label="Student"></div>
-      <button class="tab add" id="addStudentBtn">+ Student</button>
-      <span class="tab-input" id="addStudentBox">
-        <input id="newGraphName" placeholder="e.g. Hazem" aria-label="New student name">
-        <button class="btn primary" id="addGraphBtn">Add</button>
+      <span class="modes" role="group" aria-label="Mode">
+        <button id="modePaths" aria-pressed="true">Paths</button>
+        <button id="modeCams" aria-pressed="false">Cameras</button>
       </span>
-      <button class="btn" id="connectBtn" aria-pressed="false" title="Or hold Shift while clicking">Connect</button>
+      <span class="group" id="pathsTools">
+        <div class="tabs" id="tabs" role="group" aria-label="Student"></div>
+        <button class="tab add" id="addStudentBtn">+ Student</button>
+        <span class="tab-input" id="addStudentBox">
+          <input id="newGraphName" placeholder="e.g. Hazem" aria-label="New student name">
+          <button class="btn primary" id="addGraphBtn">Add</button>
+        </span>
+        <button class="btn" id="connectBtn" aria-pressed="false" title="Or hold Shift while clicking">Connect</button>
+      </span>
+      <span class="group" id="camTools" hidden>
+        <button class="tab add" id="addCamBtn">+ Camera</button>
+        <span class="tab-input" id="addCamBox">
+          <input id="newCamName" placeholder="F1_CAM_Library" aria-label="New camera name">
+          <button class="btn primary" id="addCamConfirm">Add</button>
+        </span>
+      </span>
       <span class="spacer"></span>
       <span class="status" id="status">Loading saved graphs…</span>
     </div>
     <div class="floorbar" id="floorbar" role="group" aria-label="Floors"></div>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
     <div class="canvas-wrap" id="canvasWrap">
-      <svg class="map" id="map" viewBox="0 0 1060 650" aria-label="Map of student paths"></svg>
+      <svg class="map" id="map" viewBox="0 0 1060 650" aria-label="Map"></svg>
     </div>
-    <div class="hint">
-      Click a spot to select it. <kbd>Shift</kbd>+click another (or turn on Connect) to add a path. Drag spots, or nudge the selected one with arrow keys (<kbd>Shift</kbd> for bigger steps). Dashed spots at the edge belong to another floor: click one to go there. <kbd>Esc</kbd> deselects.
-    </div>
+    <div class="hint" id="hint"></div>
   </div>
 
   <aside class="panel" id="panel">
@@ -255,8 +311,15 @@ textarea {
     </section>
 
     <section>
+      <h2>Floor map image</h2>
+      <div id="mapPanel"></div>
+      <input type="file" id="mapFileInput" accept="image/*" hidden>
+      <div class="msg" id="mapMsg"></div>
+    </section>
+
+    <section>
       <h2>File</h2>
-      <p class="muted">Save to <code>data/student_paths.json</code> in your Godot project. The generator reads it from there.</p>
+      <p class="muted">Save to <code>data/student_paths.json</code> in your Godot project. It holds spots, paths and cameras.</p>
       <div class="file-row">
         <button class="btn primary" id="saveFileBtn">Save file</button>
         <button class="btn" id="openFileBtn">Open file</button>
@@ -278,7 +341,7 @@ textarea {
       <div class="msg" id="nodeMsg"></div>
     </section>
 
-    <section>
+    <section id="studentSection">
       <h2 id="studentTitle">Student</h2>
       <button class="btn danger" id="delGraphBtn">Delete this student's graph</button>
       <div class="msg" id="graphMsg"></div>
@@ -289,6 +352,7 @@ textarea {
       <div class="add-row">
         <select id="exportKind" aria-label="What to export">
           <option value="graph">This graph (g.nodes = …)</option>
+          <option value="cameras">Camera map + minimap layout (c.cameras, c.positions)</option>
           <option value="locations">Spot list (l.nodes = …)</option>
           <option value="backup">Full file (JSON)</option>
         </select>
@@ -300,8 +364,8 @@ textarea {
 
     <section>
       <h2>Import</h2>
-      <p class="muted">Paste a <code>g.nodes = { … }</code> block to replace the current graph, or a full JSON file to replace everything.</p>
-      <textarea id="importText" aria-label="Import text" placeholder='g.nodes = {&#10;	"F1_StairsL": {"F1_HallL1": 1},&#10;}'></textarea>
+      <p class="muted">Paste a <code>g.nodes = { … }</code> block (replaces the current student's graph), the camera export (<code>c.cameras</code>, and <code>c.positions</code> if present), or a full JSON file.</p>
+      <textarea id="importText" aria-label="Import text" placeholder='c.cameras = {&#10;	"F1_CAM_HallL": ["F1_HallL2", "F1_AtriumL"],&#10;}'></textarea>
       <div class="row-btns"><button class="btn" id="importBtn">Import</button></div>
       <div class="msg" id="importMsg"></div>
     </section>
@@ -315,16 +379,18 @@ textarea {
   // ==================================================================
   // Layout constants
   // ==================================================================
-  const W = 1060;          // map width
-  const BAND_H = 650;      // height of one floor
-  const GAP = 40;          // gap between floors in "All floors" view
-  const R = 11;            // spot radius
+  const W = 1060, BAND_H = 650, GAP = 40, R = 11;
+  // In single-floor view, spots from other floors are drawn in strips OUTSIDE
+  // the floor (above and below it), so the floor's full 1060 x 650 stays free.
+  const EDGE = 72;
+  const GHOST_TOP = -EDGE / 2 - 6, GHOST_BOTTOM = BAND_H + EDGE / 2 - 6;
   const NAME_RE = /^F\d+_[A-Za-z0-9_]+$/;
+  const CAM_RE = /^F\d+_CAM_[A-Za-z0-9_]+$/;
   const SVG_NS = "http://www.w3.org/2000/svg";
   const LS_KEY = "fdasa-student-paths";
 
   // ==================================================================
-  // Default data (old v1 coordinates, migrated on load)
+  // Defaults (v1 coordinates for spots, migrated on load)
   // ==================================================================
   const DEFAULT_V1 = {
     version: 1,
@@ -369,47 +435,92 @@ textarea {
       }
     }
   };
+  // Matches data/graphs/cameras.tres. Positions are placed automatically.
+  const DEFAULT_CAMERAS = {
+    "F1_CAM_StairsL":   ["F1_StairsL", "F1_HallL1"],
+    "F1_CAM_HallL":     ["F1_HallL2", "F1_AtriumL"],
+    "F1_CAM_Chemistry": ["F1_ChemistryLab", "F1_HallL3"],
+    "F1_CAM_StairsR":   ["F1_StairsR", "F1_HallR1"],
+    "F1_CAM_HallR":     ["F1_HallR2", "F1_AtriumR"],
+    "F1_CAM_Biology":   ["F1_BiologyLab", "F1_HallR3"]
+  };
 
   // ==================================================================
   // State
   // ==================================================================
-  // state = { version: 2, floors: [numbers], locations: { id: {x, y} },  (x,y inside the spot's own floor)
-  //           graphs: { studentName: { from: { to: weight } } } }
-  let state = null;   // filled in at startup, below
+  // state = {
+  //   version: 3, floors: [..],
+  //   locations: { spotId: {x, y} },                    (x,y inside that spot's floor)
+  //   graphs:    { student: { from: { to: weight } } },
+  //   cameras:   { camId: { x, y, sees: [spotId, ...] } }  (sees = back to front)
+  // }
+  let state = null;
+  let mode = "paths";        // "paths" | "cameras"
   let current = "Bees";
-  let view = 1;            // floor number, or "all"
-  let selected = null;
+  let view = 1;              // floor number or "all"
+  let selected = null;       // selected spot
+  let selectedCam = null;    // selected camera (cameras mode)
   let connectMode = false;
   let flashTarget = null;
   let touched = false;
+  // Floor plan images, one per floor: { "1": "data:image/png;base64,..." }.
+  // Kept apart from the main state so the main save stays small.
+  let mapImages = {};
+  let adjustMap = false;     // true = dragging moves the floor image instead of spots
 
   const $ = (id) => document.getElementById(id);
   const svg = $("map");
 
   function clone(o) { return JSON.parse(JSON.stringify(o)); }
   function graph() { return state.graphs[current] || {}; }
-  function esc(s) {
-    return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-  }
+  function esc(s) { return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
   function floorOf(id) { const m = /^F(\d+)_/.exec(id); return m ? Number(m[1]) : 1; }
-  const short = (id) => id.replace(/^F\d+_/, "");
+  const short = (id) => id.replace(/^F\d+_(CAM_)?/, "");
   const clampY = (y) => Math.round(Math.max(20, Math.min(BAND_H - 20, y)));
   const clampX = (x) => Math.round(Math.max(20, Math.min(W - 20, x)));
 
-  // Converts old saves (one tall canvas) to per-floor coordinates.
+  // Places a camera up and to the left of the spots it sees.
+  function autoCamPos(sees, locations, f) {
+    const pts = sees.map((s) => locations[s]).filter((p, i) => p && floorOf(sees[i]) === f);
+    if (!pts.length) return { x: 100, y: 100 };
+    const cx = pts.reduce((a, p) => a + p.x, 0) / pts.length;
+    const cy = pts.reduce((a, p) => a + p.y, 0) / pts.length;
+    return { x: clampX(cx - 60), y: clampY(cy - 55) };
+  }
+
+  // Converts older saves: v1 (one tall canvas), v2 (no cameras) -> v3.
   function migrate(data) {
     if (!data || typeof data !== "object" || !data.locations || !data.graphs) return null;
-    const out = { version: 2, floors: [], locations: {}, graphs: data.graphs };
+    const out = { version: 3, floors: [], locations: {}, graphs: data.graphs, cameras: {} };
     const floorSet = new Set(Array.isArray(data.floors) ? data.floors.map(Number) : [0, 1, 2]);
     for (const id in data.locations) {
       const p = data.locations[id], f = floorOf(id);
       floorSet.add(f);
       let y = Number(p.y) || 0;
-      if (!data.version || data.version < 2) {
-        if (f === 1) y -= 150;
-        else if (f === 0) y -= 800;
-      }
+      if (!data.version || data.version < 2) { if (f === 1) y -= 150; else if (f === 0) y -= 800; }
       out.locations[id] = { x: clampX(Number(p.x) || 0), y: clampY(y) };
+    }
+    if (data.cameras && typeof data.cameras === "object") {
+      for (const id in data.cameras) {
+        const c = data.cameras[id];
+        const sees = Array.isArray(c.sees) ? c.sees.filter((s) => typeof s === "string") : [];
+        const pos = (typeof c.x === "number") ? { x: clampX(c.x), y: clampY(c.y) } : autoCamPos(sees, out.locations, floorOf(id));
+        out.cameras[id] = { ...pos, sees };
+        floorSet.add(floorOf(id));
+      }
+    } else {
+      for (const id in DEFAULT_CAMERAS) {
+        const sees = DEFAULT_CAMERAS[id].filter((s) => out.locations[s]);
+        out.cameras[id] = { ...autoCamPos(sees, out.locations, floorOf(id)), sees };
+      }
+    }
+    // Floor image placement: { "1": { x, y, w, h, opacity, aspect } } in floor coordinates
+    out.maps = {};
+    if (data.maps && typeof data.maps === "object") {
+      for (const f in data.maps) {
+        const m = data.maps[f];
+        if (m && typeof m.w === "number" && typeof m.h === "number") out.maps[f] = { x: m.x || 0, y: m.y || 0, w: m.w, h: m.h, opacity: m.opacity ?? 0.6, aspect: m.aspect || m.h / m.w };
+      }
     }
     out.floors = [...floorSet].filter((n) => Number.isInteger(n) && n >= 0);
     return out;
@@ -418,71 +529,34 @@ textarea {
   function floors() {
     const set = new Set(state.floors);
     for (const id in state.locations) set.add(floorOf(id));
-    return [...set].sort((a, b) => b - a);   // top floor first
+    for (const id in state.cameras) set.add(floorOf(id));
+    return [...set].sort((a, b) => b - a);
   }
-  function bandTop(f) {
-    if (view !== "all") return 0;
-    return floors().indexOf(f) * (BAND_H + GAP);
-  }
+  function bandTop(f) { return view === "all" ? floors().indexOf(f) * (BAND_H + GAP) : 0; }
+  function toDisplay(f, p) { return { x: p.x, y: bandTop(f) + p.y }; }
 
-  // Where a spot is drawn right now. Spots on other floors appear as
-  // "ghosts" at the top/bottom edge when a path connects them to this floor.
-  function dispPos(id, ghostIds) {
-    const p = state.locations[id];
-    if (!p) return null;
-    const f = floorOf(id);
-    if (view === "all") return { x: p.x, y: bandTop(f) + p.y };
-    if (f === view) return { x: p.x, y: p.y };
-    if (ghostIds.has(id)) return { x: p.x, y: f > view ? 28 : BAND_H - 28, ghost: true };
-    return null;
-  }
-  function ghostSet() {
-    const s = new Set();
-    if (view === "all") return s;
-    const g = graph();
-    for (const from in g) for (const to in g[from]) {
-      const ff = floorOf(from), tf = floorOf(to);
-      if (ff === view && tf !== view) s.add(to);
-      if (tf === view && ff !== view) s.add(from);
-    }
-    return s;
-  }
+  // Which cameras see a spot
+  function camsSeeing(spot) { return Object.keys(state.cameras).filter((c) => state.cameras[c].sees.includes(spot)); }
 
   // ==================================================================
-  // Messages
+  // Messages & saving
   // ==================================================================
   let toastTimer = null;
   function toast(text, bad) {
-    const t = $("toast");
-    t.textContent = text;
-    t.classList.toggle("bad", !!bad);
-    clearTimeout(toastTimer);
-    if (text) toastTimer = setTimeout(() => { t.textContent = ""; }, 4000);
+    const t = $("toast"); t.textContent = text; t.classList.toggle("bad", !!bad);
+    clearTimeout(toastTimer); if (text) toastTimer = setTimeout(() => { t.textContent = ""; }, 4000);
   }
-  function setMsg(id, text, kind) {
-    const m = $(id);
-    m.className = "msg" + (kind ? " " + kind : "");
-    m.textContent = text;
-  }
+  function setMsg(id, text, kind) { const m = $(id); m.className = "msg" + (kind ? " " + kind : ""); m.textContent = text; }
   function setStatus(text, bad) { const s = $("status"); s.textContent = text; s.classList.toggle("bad", !!bad); }
 
-  // ==================================================================
-  // Saving: Claude's db inside Claude, else this browser
-  // ==================================================================
   let db = null, saveMode = "none", saveTimer = null, saving = false, dirty = false;
-
-  function changed() {
-    touched = true;
-    clearTimeout(saveTimer);
-    saveTimer = setTimeout(save, 700);
-    render();
-  }
+  function changed() { touched = true; clearTimeout(saveTimer); saveTimer = setTimeout(save, 700); render(); }
+  function queueSave() { touched = true; clearTimeout(saveTimer); saveTimer = setTimeout(save, 700); }
 
   async function save() {
     if (saveMode === "db") {
       if (saving) { dirty = true; return; }
-      saving = true;
-      setStatus("Saving…");
+      saving = true; setStatus("Saving…");
       try { await db.doc("tool/state").set(clone(state)); setStatus("Saved"); }
       catch (e) {
         if (e && e.code === "unavailable") {
@@ -499,6 +573,36 @@ textarea {
     } else setStatus("Not saved. Use Save file to keep your work.", true);
   }
 
+  // Saves (or clears) one floor's image, next to the main save
+  async function saveMapImage(f) {
+    const data = mapImages[f];
+    try {
+      if (saveMode === "db") {
+        if (data) await db.doc("maps/F" + f).set({ data });
+        else await db.doc("maps/F" + f).delete();
+      } else if (saveMode === "local") {
+        if (data) localStorage.setItem(LS_KEY + "-map-" + f, data);
+        else localStorage.removeItem(LS_KEY + "-map-" + f);
+      }
+    } catch {
+      setMsg("mapMsg", "The image couldn't be saved here. Use Save file to keep it.", "bad");
+    }
+  }
+  async function loadMapImages() {
+    for (const f in state.maps) {
+      try {
+        if (saveMode === "db") {
+          const snap = await db.doc("maps/F" + f).get();
+          if (snap.exists && typeof snap.data().data === "string") mapImages[f] = snap.data().data;
+        } else if (saveMode === "local") {
+          const d = localStorage.getItem(LS_KEY + "-map-" + f);
+          if (d) mapImages[f] = d;
+        }
+      } catch { /* missing image: the panel offers an upload */ }
+    }
+    render();
+  }
+
   function loadInto(data) {
     const m = migrate(data);
     if (!m) return false;
@@ -506,20 +610,20 @@ textarea {
     if (!state.graphs[current]) current = Object.keys(state.graphs)[0] || "Bees";
     if (!state.graphs[current]) state.graphs[current] = {};
     if (view !== "all" && !floors().includes(view)) view = floors().includes(1) ? 1 : floors()[0];
-    selected = null;
+    selected = null; selectedCam = null;
     return true;
   }
 
   async function initStorage() {
-    try { if (window.claude && typeof window.claude.use === "function") db = await window.claude.use("db"); }
-    catch { db = null; }
+    try { if (window.claude && typeof window.claude.use === "function") db = await window.claude.use("db"); } catch { db = null; }
     if (db) {
       saveMode = "db";
       try {
         const snap = await db.doc("tool/state").get();
         if (touched) save();
-        else if (snap.exists) { loadInto(snap.data()); render(); setStatus("Saved"); }
+        else if (snap.exists) { loadInto(snap.data()); render(); setStatus("Saved"); if (!snap.data().cameras) save(); }
         else { setStatus("Saved"); save(); }
+        await loadMapImages();
       } catch { setStatus("Couldn't load saved graphs. Showing the defaults.", true); }
       return;
     }
@@ -529,11 +633,12 @@ textarea {
       const raw = localStorage.getItem(LS_KEY);
       if (raw && !touched) { loadInto(JSON.parse(raw)); render(); }
       setStatus("Saved in this browser");
+      loadMapImages();
     } catch { saveMode = "none"; setStatus("Not saved. Use Save file to keep your work.", true); }
   }
 
   // ==================================================================
-  // Edits
+  // Edits: paths
   // ==================================================================
   function addEdge(from, to, w = 1) {
     if (from === to) return "self";
@@ -546,39 +651,38 @@ textarea {
     return "added";
   }
   function removeFromGraph(id) { const g = graph(); delete g[id]; for (const k in g) delete g[k][id]; }
+  function incomingTo(id) { const g = graph(), out = []; for (const k in g) if (g[k][id] !== undefined) out.push(k); return out; }
+
+  // ==================================================================
+  // Edits: spots (these also keep cameras in sync)
+  // ==================================================================
   function deleteLocation(id) {
     delete state.locations[id];
     for (const n in state.graphs) { const g = state.graphs[n]; delete g[id]; for (const k in g) delete g[k][id]; }
+    for (const c in state.cameras) state.cameras[c].sees = state.cameras[c].sees.filter((s) => s !== id);
     if (selected === id) selected = null;
   }
-  function incomingTo(id) { const g = graph(), out = []; for (const k in g) if (g[k][id] !== undefined) out.push(k); return out; }
-
-  // Rebuilds an object with one key renamed, keeping key order.
-  function renameKey(obj, from, to) {
-    const out = {};
-    for (const k in obj) out[k === from ? to : k] = obj[k];
-    return out;
-  }
+  function renameKey(obj, from, to) { const out = {}; for (const k in obj) out[k === from ? to : k] = obj[k]; return out; }
   function renameLocation(from, to) {
     state.locations = renameKey(state.locations, from, to);
     for (const n in state.graphs) {
-      let g = renameKey(state.graphs[n], from, to);
+      const g = renameKey(state.graphs[n], from, to);
       for (const k in g) g[k] = renameKey(g[k], from, to);
       state.graphs[n] = g;
     }
+    for (const c in state.cameras) state.cameras[c].sees = state.cameras[c].sees.map((s) => (s === from ? to : s));
     const f = floorOf(to);
     if (!state.floors.includes(f)) state.floors.push(f);
     if (selected === from) selected = to;
   }
-
-  // Finds a free spot on a floor, on a loose grid, avoiding existing spots.
   function freePos(f) {
-    const taken = Object.keys(state.locations).filter((id) => floorOf(id) === f).map((id) => state.locations[id]);
-    for (let y = 110; y <= BAND_H - 110; y += 90) {
-      for (let x = 80; x <= W - 80; x += 110) {
+    const taken = [
+      ...Object.keys(state.locations).filter((id) => floorOf(id) === f).map((id) => state.locations[id]),
+      ...Object.keys(state.cameras).filter((id) => floorOf(id) === f).map((id) => state.cameras[id])
+    ];
+    for (let y = 80; y <= BAND_H - 80; y += 90)
+      for (let x = 80; x <= W - 80; x += 110)
         if (taken.every((p) => Math.hypot(p.x - x, p.y - y) > 50)) return { x, y };
-      }
-    }
     return { x: 80 + Math.random() * (W - 160), y: 80 + Math.random() * (BAND_H - 160) };
   }
   function addLocation(id) {
@@ -586,15 +690,36 @@ textarea {
     const f = floorOf(id);
     if (!state.floors.includes(f)) state.floors.push(f);
   }
-
-  // Accepts: one per line, comma separated, quoted strings, or PackedStringArray([...]).
   function parseSpotNames(text) {
-    const cleaned = text
-      .split("\n").map((l) => l.replace(/#.*$/, "")).join("\n")
-      .replace(/\b[A-Za-z_]+\.nodes\s*=/g, " ")     // "l.nodes ="
-      .replace(/PackedStringArray/g, " ")
-      .replace(/["'\[\]()]/g, " ");
+    const cleaned = text.split("\n").map((l) => l.replace(/#.*$/, "")).join("\n")
+      .replace(/\b[A-Za-z_]+\.nodes\s*=/g, " ").replace(/PackedStringArray/g, " ").replace(/["'\[\]()]/g, " ");
     return cleaned.split(/[\s,;]+/).map((x) => x.trim()).filter(Boolean);
+  }
+
+  // ==================================================================
+  // Edits: cameras
+  // ==================================================================
+  function toggleSee(cam, spot) {
+    const c = state.cameras[cam];
+    if (c.sees.includes(spot)) { c.sees = c.sees.filter((s) => s !== spot); return "removed"; }
+    c.sees.push(spot); return "added";
+  }
+  function renameCamera(from, to) {
+    state.cameras = renameKey(state.cameras, from, to);
+    const f = floorOf(to);
+    if (!state.floors.includes(f)) state.floors.push(f);
+    if (selectedCam === from) selectedCam = to;
+  }
+
+  // Overlays needed per student: every (camera, spot) where the spot is in their graph
+  function artNeeded() {
+    const perStudent = {};
+    for (const s in state.graphs) {
+      const g = state.graphs[s], items = [];
+      for (const c in state.cameras) for (const spot of state.cameras[c].sees) if (g[spot] !== undefined) items.push([c, spot]);
+      perStudent[s] = items;
+    }
+    return perStudent;
   }
 
   // ==================================================================
@@ -607,14 +732,10 @@ textarea {
     return n;
   }
 
-  function renderMap() {
-    const g = graph();
+  function drawBands() {
     const fl = floors();
-    const totalH = view === "all" ? fl.length * (BAND_H + GAP) - GAP : BAND_H;
-    svg.setAttribute("viewBox", `0 0 ${W} ${totalH}`);
-    svg.classList.toggle("connecting", connectMode);
-    svg.textContent = "";
-
+    if (view === "all") svg.setAttribute("viewBox", `0 0 ${W} ${fl.length * (BAND_H + GAP) - GAP}`);
+    else svg.setAttribute("viewBox", `0 ${-EDGE} ${W} ${BAND_H + 2 * EDGE}`);
     const defs = el("defs", {}, svg);
     const pat = el("pattern", { id: "grid", width: 20, height: 20, patternUnits: "userSpaceOnUse" }, defs);
     el("path", { d: "M 20 0 L 0 0 0 20", fill: "none", style: "stroke: var(--grid)", "stroke-width": 1 }, pat);
@@ -622,37 +743,75 @@ textarea {
       const m = el("marker", { id: "arrow-" + kind, viewBox: "0 0 10 10", refX: 9, refY: 5, markerWidth: 7, markerHeight: 7, orient: "auto" }, defs);
       el("path", { d: "M0,0 L10,5 L0,10 z", class: "arrow-" + kind }, m);
     }
-
-    // Floor bands
-    const shownFloors = view === "all" ? fl : [view];
-    for (const f of shownFloors) {
+    for (const f of (view === "all" ? fl : [view])) {
       const top = bandTop(f);
-      el("rect", { x: 0, y: top, width: W, height: BAND_H, fill: "url(#grid)" }, svg);
-      const t = el("text", { x: 16, y: top + 28, class: "band-label" }, svg);
-      t.textContent = "Floor " + f;
       if (view !== "all") {
-        el("line", { x1: 0, y1: 56, x2: W, y2: 56, class: "band-edge" }, svg);
-        el("line", { x1: 0, y1: BAND_H - 56, x2: W, y2: BAND_H - 56, class: "band-edge" }, svg);
+        // Strips for other-floor spots, outside the floor
+        el("rect", { x: 0, y: -EDGE, width: W, height: EDGE, class: "band" }, svg);
+        el("rect", { x: 0, y: BAND_H, width: W, height: EDGE, class: "band" }, svg);
       }
-      if (!Object.keys(state.locations).some((id) => floorOf(id) === f)) {
-        const e = el("text", { x: W / 2, y: top + BAND_H / 2, "text-anchor": "middle", class: "band-empty" }, svg);
-        e.textContent = `No spots yet. Add some named F${f}_… in the Spots panel.`;
+      el("rect", { x: 0, y: top, width: W, height: BAND_H, fill: "url(#grid)" }, svg);
+      const m = state.maps[f];
+      if (m && mapImages[f]) {
+        el("image", { href: mapImages[f], x: m.x, y: top + m.y, width: m.w, height: m.h, opacity: m.opacity, preserveAspectRatio: "none", class: "floor-map" }, svg);
+        if (adjustMap && f === view) el("rect", { x: m.x, y: top + m.y, width: m.w, height: m.h, class: "map-frame" }, svg);
       }
+      if (view !== "all") {
+        // The floor's real edges
+        el("line", { x1: 0, y1: 0, x2: W, y2: 0, class: "band-edge" }, svg);
+        el("line", { x1: 0, y1: BAND_H, x2: W, y2: BAND_H, class: "band-edge" }, svg);
+        el("text", { x: 12, y: -EDGE + 22, class: "band-label" }, svg).textContent = "Floor " + f;
+      } else {
+        el("text", { x: 16, y: top + 28, class: "band-label" }, svg).textContent = "Floor " + f;
+      }
+      const empty = !Object.keys(state.locations).some((id) => floorOf(id) === f) && !Object.keys(state.cameras).some((id) => floorOf(id) === f);
+      if (empty) el("text", { x: W / 2, y: top + BAND_H / 2, "text-anchor": "middle", class: "band-empty" }, svg)
+        .textContent = `No spots yet. Add some named F${f}_… in the Spots panel.`;
     }
+  }
 
-    const ghosts = ghostSet();
+  // Spot display positions. Off-floor spots linked to this floor become edge "ghosts".
+  function spotPositions(ghostIds) {
     const pos = {};
-    for (const id in state.locations) { const p = dispPos(id, ghosts); if (p) pos[id] = p; }
-    // Spread ghosts along the edge so their labels never overlap
-    for (const edgeY of [28, BAND_H - 28]) {
-      const row = Object.keys(pos).filter((id) => pos[id].ghost && pos[id].y === edgeY).sort((a, b) => pos[a].x - pos[b].x);
-      for (let i = 1; i < row.length; i++) {
-        const prev = pos[row[i - 1]], cur = pos[row[i]];
-        if (cur.x < prev.x + 130) pos[row[i]] = { ...cur, x: prev.x + 130 };
-      }
+    for (const id in state.locations) {
+      const p = state.locations[id], f = floorOf(id);
+      if (view === "all") pos[id] = toDisplay(f, p);
+      else if (f === view) pos[id] = { x: p.x, y: p.y };
+      else if (ghostIds.has(id)) pos[id] = { x: p.x, y: f > view ? GHOST_TOP : GHOST_BOTTOM, ghost: true };
     }
+    for (const edgeY of [GHOST_TOP, GHOST_BOTTOM]) {
+      const row = Object.keys(pos).filter((id) => pos[id].ghost && pos[id].y === edgeY).sort((a, b) => pos[a].x - pos[b].x);
+      for (let i = 1; i < row.length; i++) if (pos[row[i]].x < pos[row[i - 1]].x + 130) pos[row[i]] = { ...pos[row[i]], x: pos[row[i - 1]].x + 130 };
+    }
+    return pos;
+  }
 
-    // Edges
+  function drawSpot(layer, id, p, cls, labelOverride) {
+    const ng = el("g", { class: cls, "data-node": id, tabindex: 0, role: "button", "aria-label": id }, layer);
+    if (p.ghost) ng.setAttribute("data-ghost", "1");
+    el("rect", { x: p.x - 34, y: p.y - 18, width: 68, height: 50, class: "hit" }, ng);
+    if (/\b(stop|sel|seenby)\b/.test(cls) && !p.ghost) el("circle", { cx: p.x, cy: p.y, r: R + 5, class: "ring" }, ng);
+    el("circle", { cx: p.x, cy: p.y, r: p.ghost ? R - 2 : R, class: "dot" }, ng);
+    el("text", { x: p.x, y: p.y + R + 16, "text-anchor": "middle" }, ng).textContent =
+      labelOverride || (p.ghost ? `${floorOf(id) > view ? "↑" : "↓"} F${floorOf(id)} ${short(id)}` : short(id));
+  }
+
+  function renderMap() {
+    svg.classList.toggle("connecting", mode === "paths" && connectMode);
+    svg.textContent = "";
+    drawBands();
+    if (mode === "paths") renderPathsMap(); else renderCamerasMap();
+  }
+
+  function renderPathsMap() {
+    const g = graph();
+    const ghosts = new Set();
+    if (view !== "all") for (const from in g) for (const to in g[from]) {
+      if (floorOf(from) === view && floorOf(to) !== view) ghosts.add(to);
+      if (floorOf(to) === view && floorOf(from) !== view) ghosts.add(from);
+    }
+    const pos = spotPositions(ghosts);
+
     const edgeLayer = el("g", {}, svg), labelLayer = el("g", {}, svg);
     for (const from in g) {
       const outs = g[from];
@@ -664,57 +823,105 @@ textarea {
         const dx = b.x - a.x, dy = b.y - a.y, len = Math.hypot(dx, dy) || 1;
         const ux = dx / len, uy = dy / len, nx = -uy, ny = ux;
         const off = g[to] && g[to][from] !== undefined ? 14 : 0;
-        const sx = a.x + ux * (R + 2), sy = a.y + uy * (R + 2);
-        const ex = b.x - ux * (R + 4), ey = b.y - uy * (R + 4);
+        const sx = a.x + ux * (R + 2), sy = a.y + uy * (R + 2), ex = b.x - ux * (R + 4), ey = b.y - uy * (R + 4);
         const mx = (sx + ex) / 2, my = (sy + ey) / 2;
-        const cx = mx + nx * off * 2, cy = my + ny * off * 2;
-        const lx = mx + nx * off, ly = my + ny * off;
-
+        const cx = mx + nx * off * 2, cy = my + ny * off * 2, lx = mx + nx * off, ly = my + ny * off;
         let kind = "norm";
         if (selected) kind = from === selected ? "hi" : to === selected ? "in" : "dim";
-        el("path", {
-          d: `M${sx},${sy} Q${cx},${cy} ${ex},${ey}`,
-          class: "edge" + (kind !== "norm" ? " " + kind : "") + (w === 0 ? " zero" : ""),
-          "marker-end": `url(#arrow-${kind})`
-        }, edgeLayer);
-
+        el("path", { d: `M${sx},${sy} Q${cx},${cy} ${ex},${ey}`, class: "edge" + (kind !== "norm" ? " " + kind : "") + (w === 0 ? " zero" : ""), "marker-end": `url(#arrow-${kind})` }, edgeLayer);
         const pct = total > 0 ? Math.round((Math.max(0, w) / total) * 100) : 0;
         const text = kind === "hi" ? `${w} (${pct}%)` : String(w);
         const tw = text.length * 6.4 + 10;
         const lg = el("g", { class: "wlabel" + (kind === "hi" ? " hi" : kind === "dim" ? " dim" : "") }, labelLayer);
         el("rect", { x: lx - tw / 2, y: ly - 9, width: tw, height: 18, rx: 9 }, lg);
-        const tt = el("text", { x: lx, y: ly + 4, "text-anchor": "middle" }, lg);
-        tt.textContent = text;
+        el("text", { x: lx, y: ly + 4, "text-anchor": "middle" }, lg).textContent = text;
+      }
+    }
+    const nodeLayer = el("g", {}, svg);
+    for (const id in pos) {
+      const p = pos[id], inGraph = g[id] !== undefined, isStop = inGraph && Object.keys(g[id]).length === 0;
+      const cls = ["node", p.ghost ? "ghost" : inGraph ? "in" : "out", !p.ghost && isStop ? "stop" : "", selected === id ? "sel" : ""].join(" ").replace(/\s+/g, " ").trim();
+      drawSpot(nodeLayer, id, p, cls);
+    }
+  }
+
+  function camDisplayPos(id) {
+    const c = state.cameras[id], f = floorOf(id);
+    if (view === "all") return toDisplay(f, c);
+    if (f === view) return { x: c.x, y: c.y };
+    return null;
+  }
+
+  function renderCamerasMap() {
+    // Ghosts: off-floor spots seen by a camera on this floor
+    const ghosts = new Set();
+    if (view !== "all") for (const c in state.cameras) if (floorOf(c) === view)
+      for (const s of state.cameras[c].sees) if (floorOf(s) !== view) ghosts.add(s);
+    const pos = spotPositions(ghosts);
+    const selSees = selectedCam ? state.cameras[selectedCam].sees : [];
+
+    // Coverage lines
+    const covLayer = el("g", {}, svg);
+    for (const c in state.cameras) {
+      const cp = camDisplayPos(c);
+      if (!cp) continue;
+      for (const s of state.cameras[c].sees) {
+        const sp = pos[s];
+        if (!sp) continue;
+        const cls = "cov" + (selectedCam ? (c === selectedCam ? " hi" : " dim") : "");
+        el("line", { x1: cp.x, y1: cp.y, x2: sp.x, y2: sp.y, class: cls }, covLayer);
       }
     }
 
-    // Spots
+    // Spots: solid = some camera sees it, dashed = blind spot
     const nodeLayer = el("g", {}, svg);
     for (const id in pos) {
       const p = pos[id];
-      const inGraph = g[id] !== undefined;
-      const isStop = inGraph && Object.keys(g[id]).length === 0;
-      const cls = ["node", p.ghost ? "ghost" : inGraph ? "in" : "out", !p.ghost && isStop ? "stop" : "", selected === id ? "sel" : ""].join(" ").replace(/\s+/g, " ").trim();
-      const ng = el("g", { class: cls, "data-node": id, tabindex: 0, role: "button", "aria-label": id }, nodeLayer);
-      if (p.ghost) ng.setAttribute("data-ghost", "1");
-      el("rect", { x: p.x - 34, y: p.y - 18, width: 68, height: 50, class: "hit" }, ng);
-      if ((isStop && !p.ghost) || selected === id) el("circle", { cx: p.x, cy: p.y, r: R + 5, class: "ring" }, ng);
-      el("circle", { cx: p.x, cy: p.y, r: p.ghost ? R - 2 : R, class: "dot" }, ng);
-      const t = el("text", { x: p.x, y: p.y + R + 16, "text-anchor": "middle" }, ng);
-      t.textContent = p.ghost ? `${floorOf(id) > view ? "↑" : "↓"} F${floorOf(id)} ${short(id)}` : short(id);
+      const seen = camsSeeing(id).length > 0;
+      const cls = ["node", p.ghost ? "ghost" : seen ? "seen" : "blind", selSees.includes(id) ? "seenby" : "", selected === id ? "sel" : ""].join(" ").replace(/\s+/g, " ").trim();
+      drawSpot(nodeLayer, id, p, cls);
+    }
+
+    // Cameras, pointing at the middle of what they see
+    const camLayer = el("g", {}, svg);
+    for (const c in state.cameras) {
+      const cp = camDisplayPos(c);
+      if (!cp) continue;
+      const targets = state.cameras[c].sees.map((s) => pos[s]).filter(Boolean);
+      let ang = 0;
+      if (targets.length) {
+        const tx = targets.reduce((a, p) => a + p.x, 0) / targets.length, ty = targets.reduce((a, p) => a + p.y, 0) / targets.length;
+        ang = Math.atan2(ty - cp.y, tx - cp.x) * 180 / Math.PI;
+      }
+      const g = el("g", { class: "cam" + (selectedCam && selectedCam !== c ? " dim" : ""), "data-cam": c, tabindex: 0, role: "button", "aria-label": c }, camLayer);
+      el("rect", { x: cp.x - 30, y: cp.y - 22, width: 60, height: 58, class: "hit" }, g);
+      if (selectedCam === c) el("circle", { cx: cp.x, cy: cp.y, r: 21, class: "cam-ring" }, g);
+      const rot = el("g", { transform: `translate(${cp.x},${cp.y}) rotate(${ang})` }, g);
+      el("rect", { x: -13, y: -8, width: 18, height: 16, rx: 3, class: "body" }, rot);
+      el("polygon", { points: "5,-4 14,-9 14,9 5,4", class: "lens" }, rot);
+      el("text", { x: cp.x, y: cp.y + 30, "text-anchor": "middle", class: "cam-label" }, g).textContent = short(c);
     }
   }
 
   // ==================================================================
   // Panel rendering
   // ==================================================================
-  function renderTabs() {
+  function renderToolbar() {
+    $("modePaths").setAttribute("aria-pressed", String(mode === "paths"));
+    $("modeCams").setAttribute("aria-pressed", String(mode === "cameras"));
+    $("pathsTools").hidden = mode !== "paths";
+    $("camTools").hidden = mode !== "cameras";
+    $("studentSection").hidden = mode !== "paths";
+    $("connectBtn").setAttribute("aria-pressed", String(connectMode));
+    $("hint").innerHTML = mode === "paths"
+      ? `Click a spot to select it. <kbd>Shift</kbd>+click another (or turn on Connect) to add a path. Drag spots, or nudge the selected one with arrow keys (<kbd>Shift</kbd> for bigger steps). Dashed spots at the edge belong to another floor: click one to go there. <kbd>Esc</kbd> deselects.`
+      : `Click a camera to select it, then click spots to add or remove them from its view. Drag cameras and spots to move them, or nudge the selected one with arrow keys. Solid spots are seen by a camera, dashed ones are blind spots. <kbd>Esc</kbd> deselects.`;
+
     const tabs = $("tabs");
     tabs.textContent = "";
     for (const name of Object.keys(state.graphs)) {
       const b = document.createElement("button");
-      b.className = "tab";
-      b.textContent = name;
+      b.className = "tab"; b.textContent = name;
       b.setAttribute("aria-pressed", String(name === current));
       b.addEventListener("click", () => { current = name; selected = null; render(); });
       tabs.appendChild(b);
@@ -726,38 +933,29 @@ textarea {
   function renderFloorbar() {
     const bar = $("floorbar");
     bar.textContent = "";
-    const lbl = document.createElement("span");
-    lbl.className = "lbl"; lbl.textContent = "Show";
-    bar.appendChild(lbl);
-    const mk = (text, val, pressed) => {
+    const lbl = document.createElement("span"); lbl.className = "lbl"; lbl.textContent = "Show"; bar.appendChild(lbl);
+    const mk = (text, val) => {
       const b = document.createElement("button");
-      b.className = "tab"; b.textContent = text;
-      b.setAttribute("aria-pressed", String(pressed));
+      b.className = "tab"; b.textContent = text; b.setAttribute("aria-pressed", String(view === val));
       b.addEventListener("click", () => { view = val; render(); $("canvasWrap").scrollTop = 0; });
       bar.appendChild(b);
     };
-    mk("All floors", "all", view === "all");
-    for (const f of floors()) mk("Floor " + f, f, view === f);
-
+    mk("All floors", "all");
+    for (const f of floors()) mk("Floor " + f, f);
     const add = document.createElement("button");
     add.className = "tab add"; add.textContent = "+ Floor";
     add.addEventListener("click", () => {
       const next = Math.max(...floors()) + 1;
-      state.floors.push(next);
-      view = next;
+      state.floors.push(next); view = next;
       toast(`Added floor ${next}. Add spots named F${next}_… in the Spots panel.`);
       changed();
     });
     bar.appendChild(add);
-
-    if (view !== "all" && !Object.keys(state.locations).some((id) => floorOf(id) === view)) {
+    const isEmpty = view !== "all" && !Object.keys(state.locations).some((id) => floorOf(id) === view) && !Object.keys(state.cameras).some((id) => floorOf(id) === view);
+    if (isEmpty) {
       const rm = document.createElement("button");
       rm.className = "btn danger"; rm.textContent = `Remove floor ${view}`; rm.style.marginLeft = "8px";
-      rm.addEventListener("click", () => {
-        state.floors = state.floors.filter((f) => f !== view);
-        view = floors().includes(1) ? 1 : floors()[0];
-        changed();
-      });
+      rm.addEventListener("click", () => { state.floors = state.floors.filter((f) => f !== view); view = floors().includes(1) ? 1 : floors()[0]; changed(); });
       bar.appendChild(rm);
     }
   }
@@ -771,18 +969,20 @@ textarea {
     return html;
   }
 
+  const renameBlock = (id, act) => `<div class="rename-row"><input id="renameInput" value="${esc(id)}" aria-label="Rename"><button class="btn" data-act="${act}">Rename</button></div>`;
+
   function renderNodePanel() {
     const sec = $("nodeSection");
+    if (mode === "cameras") { sec.innerHTML = cameraPanelHtml(); flashTarget = null; return; }
+
     if (!selected || !state.locations[selected]) {
       sec.innerHTML = `<h2>${esc(current)}</h2><p class="muted">Select a spot on the map to see and edit where ${esc(current)} can go from there.</p>`;
       return;
     }
     const g = graph(), id = selected, inGraph = g[id] !== undefined;
     let html = `<h2><span class="node-name">${esc(id)}</span></h2>`;
-
     if (!inGraph) {
-      html += `<p class="muted">${esc(current)} never comes here.</p>
-        <div class="row-btns"><button class="btn primary" data-act="join">Add to ${esc(current)}'s graph</button></div>`;
+      html += `<p class="muted">${esc(current)} never comes here.</p><div class="row-btns"><button class="btn primary" data-act="join">Add to ${esc(current)}'s graph</button></div>`;
     } else {
       const outs = g[id], keys = Object.keys(outs);
       const total = keys.reduce((a, k) => a + Math.max(0, Number(outs[k]) || 0), 0);
@@ -804,52 +1004,119 @@ textarea {
             <span class="extras">
               ${back ? `<span class="muted" style="margin:0">Also goes back</span>` : `<button class="linkish" data-back="${esc(k)}">Add way back</button>`}
               <button class="linkish red" data-del="${esc(k)}">Remove</button>
-            </span>
-          </li>`;
+            </span></li>`;
         }
         html += `</ul>`;
       }
-      html += `<div class="add-row">
-          <select id="addTarget" aria-label="Add a place to go"><option value="">Add a place to go…</option>${optionsByFloor((k) => k === id || outs[k] !== undefined)}</select>
-          <button class="btn" data-act="addTarget">Add</button>
-        </div>`;
+      html += `<div class="add-row"><select id="addTarget" aria-label="Add a place to go"><option value="">Add a place to go…</option>${optionsByFloor((k) => k === id || outs[k] !== undefined)}</select><button class="btn" data-act="addTarget">Add</button></div>`;
       const inc = incomingTo(id);
       html += `<p class="muted" style="margin-top:12px">Comes here from: ${inc.length ? "" : "nowhere yet"}</p>`;
       if (inc.length) html += `<div class="chips">${inc.map((k) => `<button class="chip" data-go="${esc(k)}">${esc(k)}</button>`).join("")}</div>`;
       html += `<div class="row-btns"><button class="btn danger" data-act="leave">Remove from ${esc(current)}'s graph</button></div>`;
     }
-    html += `<div class="rename-row">
-        <input id="renameInput" value="${esc(id)}" aria-label="Rename spot">
-        <button class="btn" data-act="rename">Rename</button>
-      </div>
-      <div class="row-btns"><button class="btn danger" data-act="delLoc">Delete spot everywhere</button></div>`;
+    html += renameBlock(id, "rename") + `<div class="row-btns"><button class="btn danger" data-act="delLoc">Delete spot everywhere</button></div>`;
     sec.innerHTML = html;
     flashTarget = null;
   }
 
+  function cameraPanelHtml() {
+    // A camera is selected
+    if (selectedCam && state.cameras[selectedCam]) {
+      const c = state.cameras[selectedCam];
+      let html = `<h2><span class="cam-name">${esc(selectedCam)}</span></h2>`;
+      if (!c.sees.length) html += `<p class="muted">Sees nothing yet. Click spots on the map to add them.</p>`;
+      else {
+        html += `<p class="muted">Sees, back to front. Students on later spots are drawn on top.</p><ul class="edges">`;
+        c.sees.forEach((s, i) => {
+          html += `<li class="srow${flashTarget === s ? " flash" : ""}">
+            <span class="num">${i + 1}</span>
+            <button class="to chip" style="border:0;padding:0;text-align:left" data-go="${esc(s)}">${esc(s)}</button>
+            <span class="ctrl">
+              <button data-up="${i}" aria-label="Move back" ${i === 0 ? "disabled" : ""}>↑</button>
+              <button data-down="${i}" aria-label="Move forward" ${i === c.sees.length - 1 ? "disabled" : ""}>↓</button>
+              <button data-unsee="${esc(s)}" aria-label="Stop seeing ${esc(s)}">×</button>
+            </span></li>`;
+        });
+        html += `</ul>`;
+      }
+      html += `<div class="add-row"><select id="addSee" aria-label="Add a spot to this camera"><option value="">Add a spot…</option>${optionsByFloor((k) => c.sees.includes(k))}</select><button class="btn" data-act="addSee">Add</button></div>`;
+
+      // Art this camera needs
+      const art = [];
+      for (const st in state.graphs) {
+        const spots = c.sees.filter((s) => state.graphs[st][s] !== undefined);
+        if (spots.length) art.push(`<li>${esc(st)}: ${spots.length} overlay${spots.length === 1 ? "" : "s"} (${spots.map((s) => esc(short(s))).join(", ")})</li>`);
+      }
+      html += `<p class="muted" style="margin-top:12px">Art for this camera: 1 background${art.length ? ", plus" : ". No student walks past it yet."}</p>`;
+      if (art.length) html += `<ul class="artlist">${art.join("")}</ul>`;
+
+      html += renameBlock(selectedCam, "camRename") + `<div class="row-btns"><button class="btn danger" data-act="camDelete">Delete camera</button></div>`;
+      return html;
+    }
+    // A spot is selected: which cameras see it
+    if (selected && state.locations[selected]) {
+      const cams = camsSeeing(selected);
+      let html = `<h2><span class="node-name">${esc(selected)}</span></h2>`;
+      html += cams.length
+        ? `<p class="muted">Seen by:</p><div class="chips">${cams.map((c) => `<button class="chip cam" data-cam-go="${esc(c)}">${esc(c)}</button>`).join("")}</div>`
+        : `<p class="muted">Blind spot: no camera sees it. Students here are off-screen.</p>`;
+      if (cams.length > 1) html += `<p class="muted" style="margin-top:8px">Seen by ${cams.length} cameras, so every student who walks here needs ${cams.length} overlays.</p>`;
+      html += renameBlock(selected, "rename") + `<div class="row-btns"><button class="btn danger" data-act="delLoc">Delete spot everywhere</button></div>`;
+      return html;
+    }
+    return `<h2>Cameras</h2><p class="muted">Select a camera to see and edit which spots it covers, or add one with <strong>+ Camera</strong>. Select a spot to see which cameras cover it.</p>`;
+  }
+
   function renderChecks() {
-    const g = graph();
-    const stops = Object.keys(g).filter((k) => Object.keys(g[k]).length === 0);
-    const noWayIn = Object.keys(g).filter((k) => incomingTo(k).length === 0);
-    const missing = Object.keys(g).filter((k) => !state.locations[k]);
-    const chips = (list, red) => `<div class="chips">${list.map((k) => `<button class="chip${red ? " red" : ""}" data-go="${esc(k)}">${esc(k)}</button>`).join("")}</div>`;
-    let html = `<div class="check-group"><p>Stop spots (${stops.length}): ${esc(current)} gets stuck here.</p>${stops.length ? chips(stops, true) : `<p class="muted">None</p>`}</div>`;
-    html += `<div class="check-group"><p>No way in (${noWayIn.length}): only reachable as a starting spot.</p>${noWayIn.length ? chips(noWayIn) : `<p class="muted">None</p>`}</div>`;
-    if (missing.length) html += `<div class="check-group"><p class="msg bad">Not in the spot list: ${missing.map(esc).join(", ")}</p></div>`;
+    const chips = (list, cls, attr = "data-go") => `<div class="chips">${list.map((k) => `<button class="chip${cls ? " " + cls : ""}" ${attr}="${esc(k)}">${esc(k)}</button>`).join("")}</div>`;
+    let html = "";
+    if (mode === "paths") {
+      const g = graph();
+      const stops = Object.keys(g).filter((k) => Object.keys(g[k]).length === 0);
+      const noWayIn = Object.keys(g).filter((k) => incomingTo(k).length === 0);
+      const missing = Object.keys(g).filter((k) => !state.locations[k]);
+      html += `<div class="check-group"><p>Stop spots (${stops.length}): ${esc(current)} gets stuck here.</p>${stops.length ? chips(stops, "red") : `<p class="muted">None</p>`}</div>`;
+      html += `<div class="check-group"><p>No way in (${noWayIn.length}): only reachable as a starting spot.</p>${noWayIn.length ? chips(noWayIn) : `<p class="muted">None</p>`}</div>`;
+      if (missing.length) html += `<div class="check-group"><p class="msg bad">Not in the spot list: ${missing.map(esc).join(", ")}</p></div>`;
+    } else {
+      const inView = (id) => view === "all" || floorOf(id) === view;
+      const where = view === "all" ? "" : ` on floor ${view}`;
+      const blind = Object.keys(state.locations).filter((s) => inView(s) && camsSeeing(s).length === 0);
+      const multi = Object.keys(state.locations).filter((s) => inView(s) && camsSeeing(s).length > 1);
+      const emptyCams = Object.keys(state.cameras).filter((c) => state.cameras[c].sees.length === 0);
+      const walked = new Set(); for (const st in state.graphs) for (const s in state.graphs[st]) walked.add(s);
+      const blindWalked = blind.filter((s) => walked.has(s));
+      html += `<div class="check-group"><p>Blind spots${where} (${blind.length}): no camera sees these.</p>${blind.length ? chips(blind) : `<p class="muted">None</p>`}`;
+      if (blindWalked.length) html += `<p class="muted" style="margin-top:4px">${blindWalked.length} of them are on a student's path. Fine for classrooms, worth a look for hallways.</p>`;
+      html += `</div>`;
+      html += `<div class="check-group"><p>Seen by 2+ cameras${where} (${multi.length}): each costs extra overlays.</p>${multi.length ? chips(multi) : `<p class="muted">None</p>`}</div>`;
+      if (emptyCams.length) html += `<div class="check-group"><p>Cameras that see nothing (${emptyCams.length}):</p>${chips(emptyCams, "red", "data-cam-go")}</div>`;
+      const art = artNeeded();
+      const total = Object.values(art).reduce((a, v) => a + v.length, 0);
+      html += `<div class="check-group"><p>Art needed (whole building): ${Object.keys(state.cameras).length} backgrounds, ${total} overlays</p><ul class="artlist">${Object.keys(art).map((s) => `<li>${esc(s)}: ${art[s].length}</li>`).join("")}</ul></div>`;
+    }
     $("checks").innerHTML = html;
   }
 
   // ==================================================================
   // Export / import
   // ==================================================================
+  function padBlock(prefix, entries) {
+    const pad = Math.max(0, ...entries.map(([k]) => k.length + 3));
+    return `\t${prefix} = {\n${entries.map(([k, v]) => `\t\t${(`"${k}":`).padEnd(pad)} ${v},`).join("\n")}\n\t}`;
+  }
   function exportGraph() {
-    const g = graph(), keys = Object.keys(g);
-    const pad = Math.max(0, ...keys.map((k) => k.length + 3));
-    const lines = keys.map((k) => {
-      const inner = Object.keys(g[k]).map((t) => `"${t}": ${Number(g[k][t]) || 0}`).join(", ");
-      return `\t\t${(`"${k}":`).padEnd(pad)} {${inner}},`;
-    });
-    return `\tg.nodes = {\n${lines.join("\n")}\n\t}`;
+    const g = graph();
+    return padBlock("g.nodes", Object.keys(g).map((k) => [k, `{${Object.keys(g[k]).map((t) => `"${t}": ${Number(g[k][t]) || 0}`).join(", ")}}`]));
+  }
+  function exportCameras() {
+    const sees = padBlock("c.cameras", Object.keys(state.cameras).map((c) => [c, `[${state.cameras[c].sees.map((s) => `"${s}"`).join(", ")}]`]));
+    // Minimap layout: where every camera and spot sits on its floor (tool coordinates, 1060 x 650 per floor)
+    const posEntries = [
+      ...Object.keys(state.cameras).map((c) => [c, `Vector2(${state.cameras[c].x}, ${state.cameras[c].y})`]),
+      ...Object.keys(state.locations).map((l) => [l, `Vector2(${state.locations[l].x}, ${state.locations[l].y})`])
+    ];
+    return sees + "\n" + padBlock("c.positions", posEntries);
   }
   function exportLocations() {
     const lines = [];
@@ -864,18 +1131,30 @@ textarea {
   function renderExport() {
     const kind = $("exportKind").value;
     $("exportKind").options[0].textContent = `${current}'s graph (g.nodes = …)`;
-    $("exportText").value = kind === "graph" ? exportGraph() : kind === "locations" ? exportLocations() : JSON.stringify(state, null, 2);
-    const d = new Date();
-    $("exportUpdated").textContent = `Updated ${d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}`;
+    $("exportText").value = kind === "graph" ? exportGraph() : kind === "cameras" ? exportCameras() : kind === "locations" ? exportLocations() : JSON.stringify(state, null, 2);
+    $("exportUpdated").textContent = `Updated ${new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}`;
+  }
+
+  // Finds "name = { ... }" in GDScript text and returns just the { ... } part.
+  function extractBlock(text, name) {
+    const at = text.indexOf(name);
+    if (at === -1) return null;
+    const start = text.indexOf("{", at);
+    if (start === -1) return null;
+    let depth = 0, inStr = false;
+    for (let i = start; i < text.length; i++) {
+      const ch = text[i];
+      if (ch === '"') inStr = !inStr;
+      else if (!inStr && ch === "{") depth++;
+      else if (!inStr && ch === "}" && --depth === 0) return text.slice(start, i + 1);
+    }
+    return null;
   }
 
   function parseGdDict(text) {
     const noComments = text.split("\n").map((l) => {
       let inStr = false;
-      for (let i = 0; i < l.length; i++) {
-        if (l[i] === '"') inStr = !inStr;
-        else if (l[i] === "#" && !inStr) return l.slice(0, i);
-      }
+      for (let i = 0; i < l.length; i++) { if (l[i] === '"') inStr = !inStr; else if (l[i] === "#" && !inStr) return l.slice(0, i); }
       return l;
     }).join("\n");
     const start = noComments.indexOf("{"), end = noComments.lastIndexOf("}");
@@ -886,15 +1165,49 @@ textarea {
   function doImport() {
     const text = $("importText").value.trim();
     if (!text) { setMsg("importMsg", "Paste something to import first.", "bad"); return; }
-    let data;
-    try { data = parseGdDict(text); }
-    catch (e) { setMsg("importMsg", "Couldn't read that: " + e.message, "bad"); return; }
+    let data, positions = null;
+    try {
+      if (text.includes("c.cameras")) {
+        // Camera export: c.cameras block, optionally followed by c.positions with Vector2(x, y)
+        const vec = (t) => t.replace(/Vector2\(\s*(-?[\d.]+)\s*,\s*(-?[\d.]+)\s*\)/g, "[$1, $2]");
+        data = parseGdDict(extractBlock(text, "c.cameras") || "");
+        const posText = extractBlock(text, "c.positions");
+        if (posText) positions = parseGdDict(vec(posText));
+      } else data = parseGdDict(text);
+    } catch (e) { setMsg("importMsg", "Couldn't read that: " + e.message, "bad"); return; }
 
-    if (data && data.graphs && data.locations) {
-      loadInto(data);
-      setMsg("importMsg", "Full file imported.", "good");
+    if (data && data.graphs && data.locations) { loadInto(data); setMsg("importMsg", "Full file imported.", "good"); changed(); return; }
+
+    const values = Object.values(data);
+    // Camera map: every value is a list of spots
+    if (values.length && values.every(Array.isArray)) {
+      const added = [];
+      for (const cam in data) {
+        if (!CAM_RE.test(cam)) { setMsg("importMsg", `"${cam}" isn't a camera name like F1_CAM_HallL.`, "bad"); return; }
+        for (const s of data[cam]) {
+          if (typeof s !== "string" || !NAME_RE.test(s)) { setMsg("importMsg", `"${s}" in ${cam} needs a floor prefix like F1_.`, "bad"); return; }
+          if (!state.locations[s]) { addLocation(s); added.push(s); }
+        }
+      }
+      const next = {};
+      for (const cam in data) {
+        const old = state.cameras[cam];
+        next[cam] = old ? { x: old.x, y: old.y, sees: [...data[cam]] } : { ...autoCamPos(data[cam], state.locations, floorOf(cam)), sees: [...data[cam]] };
+      }
+      // Apply positions from c.positions, if it was pasted too
+      if (positions) for (const id in positions) {
+        const v = positions[id];
+        if (!Array.isArray(v) || v.length !== 2) continue;
+        const target = next[id] || state.locations[id];
+        if (target) { target.x = clampX(Number(v[0])); target.y = clampY(Number(v[1])); }
+      }
+      state.cameras = next;
+      selectedCam = null;
+      if (mode !== "cameras") mode = "cameras";
+      setMsg("importMsg", `Replaced the camera map (${Object.keys(next).length} cameras).` + (added.length ? ` New spots: ${added.join(", ")}.` : ""), "good");
       changed(); return;
     }
+
     const g = {}, added = [];
     for (const from in data) {
       const outs = data[from];
@@ -913,6 +1226,7 @@ textarea {
     }
     state.graphs[current] = g;
     selected = null;
+    if (mode !== "paths") mode = "paths";
     setMsg("importMsg", `Replaced ${current}'s graph (${Object.keys(g).length} spots).` + (added.length ? ` New spots: ${added.join(", ")}.` : ""), "good");
     changed();
   }
@@ -922,8 +1236,7 @@ textarea {
     try { await navigator.clipboard.writeText(ta.value); setMsg("copyMsg", "Copied.", "good"); }
     catch {
       ta.focus(); ta.select();
-      let ok = false;
-      try { ok = document.execCommand("copy"); } catch { ok = false; }
+      let ok = false; try { ok = document.execCommand("copy"); } catch { ok = false; }
       setMsg("copyMsg", ok ? "Copied." : "Text is selected: press Ctrl+C to copy.", ok ? "good" : "bad");
     }
   }
@@ -931,69 +1244,208 @@ textarea {
   // ==================================================================
   // Render all
   // ==================================================================
+  // ==================================================================
+  // Floor map image
+  // ==================================================================
+  // Fits an image of the given aspect (h/w) inside the floor, centered
+  function fitPlacement(aspect) {
+    let w = W, h = W * aspect;
+    if (h > BAND_H) { h = BAND_H; w = BAND_H / aspect; }
+    return { x: Math.round((W - w) / 2), y: Math.round((BAND_H - h) / 2), w: Math.round(w), h: Math.round(h) };
+  }
+  function sizePercent(m) { return Math.round((m.w / fitPlacement(m.aspect).w) * 100); }
+
+  function renderMapPanel() {
+    const panel = $("mapPanel");
+    if (view === "all") {
+      panel.innerHTML = `<p class="muted">Pick a single floor above to add or adjust its floor plan image.</p>`;
+      return;
+    }
+    const f = view, m = state.maps[f], img = mapImages[f];
+    if (!m || !img) {
+      panel.innerHTML = `<p class="muted">Upload a floor plan for floor ${f} to trace your spots over it. It can also become the map on the in-game camera tablet.</p>
+        <div class="row-btns"><button class="btn primary" data-map="upload">Upload image</button></div>`;
+      return;
+    }
+    panel.innerHTML = `
+      <img class="map-thumb" src="${img}" alt="Floor ${f} plan">
+      <p class="muted" style="margin:8px 0 0">${(() => {
+        const fit = fitPlacement(m.aspect), fitted = m.x === fit.x && m.y === fit.y && m.w === fit.w && m.h === fit.h;
+        const fills = m.x === 0 && m.y === 0 && m.w === W && m.h === BAND_H;
+        return `Placed at ${m.x}, ${m.y}, size ${m.w} × ${m.h}. ` + (fills ? "Fills the whole floor." : fitted ? "Fitted to the floor." : "<strong>Moved or resized</strong>: press Fit to floor to reset.");
+      })()}</p>
+      <div class="slider-row"><label for="mapOpacity">Opacity</label><input type="range" id="mapOpacity" min="10" max="100" value="${Math.round(m.opacity * 100)}"><output id="mapOpacityOut">${Math.round(m.opacity * 100)}%</output></div>
+      <div class="slider-row"><label for="mapSize">Size</label><input type="range" id="mapSize" min="20" max="300" value="${sizePercent(m)}"><output id="mapSizeOut">${sizePercent(m)}%</output></div>
+      <div class="row-btns">
+        <button class="btn" data-map="adjust" aria-pressed="${adjustMap}">${adjustMap ? "Done moving" : "Move image"}</button>
+        <button class="btn" data-map="fit">Fit to floor</button>
+        <button class="btn" data-map="upload">Replace</button>
+        <button class="btn danger" data-map="remove">Remove</button>
+      </div>
+      <p class="muted" style="margin:14px 0 6px">For the camera tablet: save it as <code>res://assets/ui/map_F${f}.png</code>. It's exported at the same spot and size as here, so the camera buttons line up.</p>
+      <div class="add-row">
+        <select id="mapStyle" aria-label="Map style">
+          <option value="tablet">White lines, see-through (for the dark tablet)</option>
+          <option value="original">Original colors</option>
+        </select>
+        <button class="btn primary" data-map="export">Download</button>
+      </div>`;
+  }
+
+  // Shrinks big images so they save comfortably (each floor image is stored on its own)
+  async function prepareImage(file) {
+    const url = URL.createObjectURL(file);
+    try {
+      const img = await loadImg(url);
+      let scale = Math.min(1, 1800 / Math.max(img.naturalWidth, img.naturalHeight));
+      for (let tries = 0; tries < 6; tries++) {
+        const c = document.createElement("canvas");
+        c.width = Math.max(1, Math.round(img.naturalWidth * scale));
+        c.height = Math.max(1, Math.round(img.naturalHeight * scale));
+        c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+        for (const [type, q] of [["image/png"], ["image/webp", 0.9], ["image/jpeg", 0.88]]) {
+          const data = c.toDataURL(type, q);
+          if (data.startsWith("data:" + type) && data.length < 240000) return { data, aspect: c.height / c.width };
+        }
+        scale *= 0.75;
+      }
+      throw new Error("too big");
+    } finally { URL.revokeObjectURL(url); }
+  }
+  function loadImg(src) {
+    return new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = src; });
+  }
+
+  // Renders the floor image at its placement into a 1060x650 (x2) PNG.
+  // "tablet" style turns dark lines white and the paper transparent.
+  async function exportMapPng(f, style) {
+    const m = state.maps[f], S = 2;
+    const img = await loadImg(mapImages[f]);
+    const c = document.createElement("canvas");
+    c.width = W * S; c.height = BAND_H * S;
+    const ctx = c.getContext("2d");
+    ctx.drawImage(img, m.x * S, m.y * S, m.w * S, m.h * S);
+    if (style === "tablet") {
+      const d = ctx.getImageData(0, 0, c.width, c.height), px = d.data;
+      for (let i = 0; i < px.length; i += 4) {
+        const lum = 0.299 * px[i] + 0.587 * px[i + 1] + 0.114 * px[i + 2];
+        let a = ((255 - lum) / 255) * (px[i + 3] / 255);
+        a = a < 0.08 ? 0 : Math.min(1, a * 1.6);   // drop paper grain, boost the lines
+        px[i] = px[i + 1] = px[i + 2] = 255;
+        px[i + 3] = Math.round(a * 255);
+      }
+      ctx.putImageData(d, 0, 0);
+    }
+    const blob = await new Promise((r) => c.toBlob(r, "image/png"));
+    await saveBlob(`map_F${f}.png`, blob, "mapMsg");
+  }
+
+  async function saveBlob(filename, blob, msgId) {
+    try {
+      const dl = window.claude && window.claude.use ? await window.claude.use("downloads") : null;
+      if (dl) { await dl.save({ filename, data: blob }); setMsg(msgId, `Saved ${filename}.`, "good"); return; }
+    } catch { setMsg(msgId, "Download was cancelled.", "bad"); return; }
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob); a.download = filename;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+    setMsg(msgId, `Downloaded ${filename}.`, "good");
+  }
+
   function render() {
-    renderTabs();
+    if (view === "all") adjustMap = false;
+    svg.classList.toggle("adjusting", adjustMap);
+    renderToolbar();
     renderFloorbar();
     renderMap();
+    renderMapPanel();
     renderNodePanel();
     renderChecks();
     renderExport();
-    $("connectBtn").setAttribute("aria-pressed", String(connectMode));
   }
+
+  function setMode(m) {
+    if (mode === m) return;
+    mode = m; selected = null; selectedCam = null; connectMode = false; toast("");
+    $("exportKind").value = m === "cameras" ? "cameras" : "graph";
+    render();
+  }
+  $("modePaths").addEventListener("click", () => setMode("paths"));
+  $("modeCams").addEventListener("click", () => setMode("cameras"));
 
   // ==================================================================
   // Map interaction
   // ==================================================================
   function svgPoint(evt) {
-    const pt = svg.createSVGPoint();
-    pt.x = evt.clientX; pt.y = evt.clientY;
+    const pt = svg.createSVGPoint(); pt.x = evt.clientX; pt.y = evt.clientY;
     const m = svg.getScreenCTM();
     return m ? pt.matrixTransform(m.inverse()) : { x: 0, y: 0 };
   }
-
-  function goTo(id) {
-    if (view !== "all" && floorOf(id) !== view) view = floorOf(id);
-    selected = id;
-  }
+  function goTo(id) { if (view !== "all" && floorOf(id) !== view) view = floorOf(id); selected = id; }
+  function goToCam(id) { if (view !== "all" && floorOf(id) !== view) view = floorOf(id); selectedCam = id; selected = null; }
 
   let press = null;
   svg.addEventListener("pointerdown", (e) => {
     if (e.button !== 0) return;
-    const n = e.target.closest("[data-node]");
-    press = { id: n ? n.getAttribute("data-node") : null, ghost: !!(n && n.hasAttribute("data-ghost")), sx: e.clientX, sy: e.clientY, moved: false, shift: e.shiftKey };
-    if (n) e.preventDefault();
+    // Adjust mode: any drag on the map moves the floor image
+    if (adjustMap && view !== "all" && state.maps[view]) {
+      const p0 = svgPoint(e), m = state.maps[view];
+      press = { mapDrag: true, px: p0.x, py: p0.y, ox: m.x, oy: m.y, sx: e.clientX, sy: e.clientY, moved: false };
+      e.preventDefault();
+      return;
+    }
+    const n = e.target.closest("[data-node]"), c = e.target.closest("[data-cam]");
+    press = {
+      node: n ? n.getAttribute("data-node") : null,
+      cam: c ? c.getAttribute("data-cam") : null,
+      ghost: !!(n && n.hasAttribute("data-ghost")),
+      sx: e.clientX, sy: e.clientY, moved: false, shift: e.shiftKey
+    };
+    if (n || c) e.preventDefault();
   });
 
   window.addEventListener("pointermove", (e) => {
-    if (!press || !press.id || press.ghost) return;
+    if (press && press.mapDrag) {
+      const p = svgPoint(e), m = state.maps[view];
+      if (!m) return;
+      press.moved = true;
+      m.x = Math.round(press.ox + (p.x - press.px));
+      m.y = Math.round(press.oy + (p.y - press.py));
+      renderMap();
+      return;
+    }
+    if (!press || press.ghost || !(press.node || press.cam)) return;
     if (!press.moved && Math.hypot(e.clientX - press.sx, e.clientY - press.sy) < 8) return;
     press.moved = true;
     const p = svgPoint(e);
-    const loc = state.locations[press.id];
-    loc.x = clampX(p.x);
-    loc.y = clampY(p.y - bandTop(floorOf(press.id)));
+    const id = press.cam || press.node;
+    const obj = press.cam ? state.cameras[id] : state.locations[id];
+    obj.x = clampX(p.x);
+    obj.y = clampY(p.y - bandTop(floorOf(id)));
     renderMap();
   });
 
   window.addEventListener("pointerup", (e) => {
     if (!press) return;
     const p = press; press = null;
-    if (!p.id) {
-      if (!connectMode && e.target.closest && e.target.closest("svg") === svg) { selected = null; render(); }
+    if (p.mapDrag) { if (p.moved) changed(); else renderMapPanel(); return; }
+    if (!p.node && !p.cam) {
+      if (!(mode === "paths" && connectMode) && e.target.closest && e.target.closest("svg") === svg) { selected = null; selectedCam = null; render(); }
       return;
     }
     if (p.moved) { changed(); return; }
-    handleNodeClick(p.id, p.shift || e.shiftKey, p.ghost);
+    if (p.cam) { handleCamClick(p.cam); return; }
+    if (mode === "cameras") handleSpotClickCams(p.node, p.ghost);
+    else handleSpotClickPaths(p.node, p.shift || e.shiftKey, p.ghost);
   });
   window.addEventListener("pointercancel", () => { press = null; });
 
-  function handleNodeClick(id, shift, ghost) {
+  function handleSpotClickPaths(id, shift, ghost) {
     const connecting = shift || connectMode;
     if (connecting && selected && selected !== id) {
       const r = addEdge(selected, id);
       toast(r === "added" ? `Added path ${short(selected)} to ${id} for ${current}.` : `${short(selected)} already goes to ${short(id)}. Change its weight in the panel.`);
-      changed();
-      return;
+      changed(); return;
     }
     if (ghost) { goTo(id); toast(`Floor ${floorOf(id)}`); render(); return; }
     selected = id;
@@ -1001,23 +1453,47 @@ textarea {
     render();
   }
 
+  function handleSpotClickCams(id, ghost) {
+    if (selectedCam) {
+      const r = toggleSee(selectedCam, id);
+      flashTarget = r === "added" ? id : null;
+      toast(r === "added" ? `${short(selectedCam)} now sees ${id}.` : `${short(selectedCam)} no longer sees ${id}.`);
+      changed(); return;
+    }
+    if (ghost) { goTo(id); render(); return; }
+    selected = id; render();
+  }
+
+  function handleCamClick(id) {
+    selectedCam = selectedCam === id ? null : id;
+    selected = null;
+    if (selectedCam) toast(`Click spots to add them to ${short(id)}'s view, or click them again to remove.`);
+    render();
+  }
+
   svg.addEventListener("keydown", (e) => {
-    const n = e.target.closest("[data-node]");
-    if (n && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); handleNodeClick(n.getAttribute("data-node"), e.shiftKey, n.hasAttribute("data-ghost")); }
+    if (e.key !== "Enter" && e.key !== " ") return;
+    const n = e.target.closest("[data-node]"), c = e.target.closest("[data-cam]");
+    if (!n && !c) return;
+    e.preventDefault();
+    if (c) handleCamClick(c.getAttribute("data-cam"));
+    else if (mode === "cameras") handleSpotClickCams(n.getAttribute("data-node"), n.hasAttribute("data-ghost"));
+    else handleSpotClickPaths(n.getAttribute("data-node"), e.shiftKey, n.hasAttribute("data-ghost"));
   });
 
-  function isTyping(t) { return t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT"); }
+  const isTyping = (t) => t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT");
   document.addEventListener("keydown", (e) => {
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") { e.preventDefault(); saveFile(); return; }
     if (isTyping(e.target)) return;
-    if (e.key === "Escape") { selected = null; connectMode = false; toast(""); render(); return; }
+    if (e.key === "Escape") { selected = null; selectedCam = null; connectMode = false; toast(""); render(); return; }
     const moves = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
-    if (selected && moves[e.key] && state.locations[selected]) {
-      e.preventDefault();
-      const step = e.shiftKey ? 20 : 5, [dx, dy] = moves[e.key], p = state.locations[selected];
-      p.x = clampX(p.x + dx * step); p.y = clampY(p.y + dy * step);
-      changed();
-    }
+    if (!moves[e.key]) return;
+    const obj = selectedCam ? state.cameras[selectedCam] : selected ? state.locations[selected] : null;
+    if (!obj) return;
+    e.preventDefault();
+    const step = e.shiftKey ? 20 : 5, [dx, dy] = moves[e.key];
+    obj.x = clampX(obj.x + dx * step); obj.y = clampY(obj.y + dy * step);
+    changed();
   });
 
   $("connectBtn").addEventListener("click", () => {
@@ -1033,8 +1509,7 @@ textarea {
   function confirmClick(btn, label) {
     if (armed.get(btn)) return true;
     armed.set(btn, true);
-    const old = btn.textContent;
-    btn.textContent = label; btn.classList.add("armed");
+    const old = btn.textContent; btn.textContent = label; btn.classList.add("armed");
     setTimeout(() => { if (btn.isConnected) { btn.textContent = old; btn.classList.remove("armed"); armed.delete(btn); } }, 3000);
     return false;
   }
@@ -1043,36 +1518,60 @@ textarea {
     const t = e.target.closest("button");
     if (!t) return;
     const g = graph(), d = t.dataset;
-    if (d.go) { goTo(d.go); render(); return; }
+
+    if (d.camGo) { goToCam(d.camGo); render(); return; }
+    if (d.go) {
+      if (mode === "cameras") { const keepCam = selectedCam; goTo(d.go); selectedCam = null; if (keepCam) selected = d.go; }
+      else goTo(d.go);
+      render(); return;
+    }
+    // Paths
     if (d.inc) { g[selected][d.inc] = (Number(g[selected][d.inc]) || 0) + 1; changed(); return; }
     if (d.dec) { g[selected][d.dec] = Math.max(0, (Number(g[selected][d.dec]) || 0) - 1); changed(); return; }
     if (d.back) { addEdge(d.back, selected); flashTarget = null; changed(); return; }
     if (d.del) { delete g[selected][d.del]; changed(); return; }
     if (d.act === "join") { g[selected] = {}; changed(); return; }
     if (d.act === "leave") { if (confirmClick(t, "Click again to remove")) { removeFromGraph(selected); changed(); } return; }
-    if (d.act === "delLoc") { if (confirmClick(t, "Click again to delete")) { deleteLocation(selected); changed(); } return; }
     if (d.act === "addTarget") { const v = $("addTarget").value; if (v) { addEdge(selected, v); changed(); } return; }
+    // Cameras
+    if (d.up !== undefined || d.down !== undefined) {
+      const sees = state.cameras[selectedCam].sees, i = Number(d.up ?? d.down), j = d.up !== undefined ? i - 1 : i + 1;
+      if (j >= 0 && j < sees.length) { [sees[i], sees[j]] = [sees[j], sees[i]]; flashTarget = sees[j]; changed(); }
+      return;
+    }
+    if (d.unsee) { toggleSee(selectedCam, d.unsee); changed(); return; }
+    if (d.act === "addSee") { const v = $("addSee").value; if (v) { toggleSee(selectedCam, v); flashTarget = v; changed(); } return; }
+    if (d.act === "camDelete") {
+      if (confirmClick(t, "Click again to delete")) { const id = selectedCam; delete state.cameras[id]; selectedCam = null; toast(`Deleted ${id}.`); changed(); }
+      return;
+    }
+    if (d.act === "camRename") {
+      const to = $("renameInput").value.trim();
+      if (to === selectedCam) return;
+      if (!CAM_RE.test(to)) { toast("Camera names look like F1_CAM_HallL.", true); return; }
+      if (state.cameras[to]) { toast(`${to} already exists.`, true); return; }
+      const from = selectedCam; renameCamera(from, to);
+      if (view !== "all") view = floorOf(to);
+      toast(`Renamed ${from} to ${to}.`); changed(); return;
+    }
+    // Spots (both modes)
+    if (d.act === "delLoc") { if (confirmClick(t, "Click again to delete")) { deleteLocation(selected); changed(); } return; }
     if (d.act === "rename") {
       const to = $("renameInput").value.trim();
       if (to === selected) return;
-      if (!NAME_RE.test(to)) { toast("Spot names need a floor prefix, like F2_Library.", true); return; }
+      if (!NAME_RE.test(to) || CAM_RE.test(to)) { toast("Spot names need a floor prefix, like F2_Library.", true); return; }
       if (state.locations[to]) { toast(`${to} already exists.`, true); return; }
-      const from = selected;
-      renameLocation(from, to);
+      const from = selected; renameLocation(from, to);
       if (view !== "all") view = floorOf(to);
-      toast(`Renamed ${from} to ${to} in every graph.`);
-      changed();
+      toast(`Renamed ${from} to ${to} in every graph and camera.`); changed();
     }
   });
 
-  // Weight inputs update live while typing, not only when leaving the field
   $("panel").addEventListener("input", (e) => {
     const inp = e.target;
     if (inp.dataset && inp.dataset.w !== undefined && selected && inp.value !== "") {
       graph()[selected][inp.dataset.w] = Math.max(0, Number(inp.value) || 0);
-      touched = true;
-      clearTimeout(saveTimer); saveTimer = setTimeout(save, 700);
-      renderMap(); renderExport();
+      queueSave(); renderMap(); renderExport();
     }
   });
   $("panel").addEventListener("change", (e) => {
@@ -1081,50 +1580,114 @@ textarea {
     if (inp.id === "exportKind") renderExport();
   });
 
+  $("mapPanel").addEventListener("click", async (e) => {
+    const t = e.target.closest("button[data-map]");
+    if (!t || view === "all") return;
+    const f = view, act = t.dataset.map;
+    if (act === "upload") { $("mapFileInput").click(); return; }
+    if (act === "adjust") {
+      adjustMap = !adjustMap;
+      toast(adjustMap ? "Move mode: dragging anywhere on the map moves the image, not spots. Press Done moving when finished." : "");
+      render(); return;
+    }
+    if (act === "fit") { Object.assign(state.maps[f], fitPlacement(state.maps[f].aspect)); changed(); return; }
+    if (act === "remove") {
+      if (!confirmClick(t, "Click again to remove")) return;
+      delete state.maps[f]; delete mapImages[f]; adjustMap = false;
+      saveMapImage(f); changed(); return;
+    }
+    if (act === "export") {
+      setMsg("mapMsg", "Preparing…");
+      try { await exportMapPng(f, $("mapStyle").value); }
+      catch { setMsg("mapMsg", "Couldn't create the image.", "bad"); }
+    }
+  });
+  $("mapPanel").addEventListener("input", (e) => {
+    const m = state.maps[view];
+    if (!m) return;
+    if (e.target.id === "mapOpacity") {
+      m.opacity = Number(e.target.value) / 100;
+      $("mapOpacityOut").textContent = e.target.value + "%";
+    } else if (e.target.id === "mapSize") {
+      // Resize around the image's center
+      const fit = fitPlacement(m.aspect), pct = Number(e.target.value) / 100;
+      const cx = m.x + m.w / 2, cy = m.y + m.h / 2;
+      m.w = Math.round(fit.w * pct); m.h = Math.round(fit.h * pct);
+      m.x = Math.round(cx - m.w / 2); m.y = Math.round(cy - m.h / 2);
+      $("mapSizeOut").textContent = e.target.value + "%";
+    } else return;
+    queueSave(); renderMap();
+  });
+  $("mapPanel").addEventListener("change", (e) => { if (e.target.id === "mapSize") renderMapPanel(); });
+  $("mapFileInput").addEventListener("change", async (e) => {
+    const file = e.target.files && e.target.files[0]; e.target.value = "";
+    if (!file || view === "all") return;
+    const f = view;
+    try {
+      setMsg("mapMsg", "Loading image…");
+      const { data, aspect } = await prepareImage(file);
+      mapImages[f] = data;
+      state.maps[f] = { ...fitPlacement(aspect), opacity: 0.6, aspect };
+      setMsg("mapMsg", `Added a floor plan for floor ${f}, fitted to the floor. Use Move image only if you need to line it up differently.`, "good");
+      await saveMapImage(f);
+      changed();
+    } catch { setMsg("mapMsg", "Couldn't read that image. Try a PNG or JPG.", "bad"); }
+  });
 
   $("copyBtn").addEventListener("click", copyExport);
   $("importBtn").addEventListener("click", doImport);
 
   // Students
-  $("addStudentBtn").addEventListener("click", () => {
-    const box = $("addStudentBox");
-    box.classList.toggle("open");
-    if (box.classList.contains("open")) $("newGraphName").focus();
-  });
+  function inlineAdder(btnId, boxId, inputId, onAdd) {
+    $(btnId).addEventListener("click", () => { const box = $(boxId); box.classList.toggle("open"); if (box.classList.contains("open")) $(inputId).focus(); });
+    $(inputId).addEventListener("keydown", (e) => {
+      if (e.key === "Enter") onAdd();
+      if (e.key === "Escape") { e.stopPropagation(); $(boxId).classList.remove("open"); }
+    });
+  }
   function addStudent() {
     const name = $("newGraphName").value.trim();
     if (!name) { toast("Type a name for the student first.", true); return; }
     if (state.graphs[name]) { toast(`${name} already has a graph.`, true); return; }
-    state.graphs[name] = {};
-    current = name; selected = null;
-    $("newGraphName").value = "";
-    $("addStudentBox").classList.remove("open");
+    state.graphs[name] = {}; current = name; selected = null;
+    $("newGraphName").value = ""; $("addStudentBox").classList.remove("open");
     toast(`Added ${name}. Click a spot and use "Add to ${name}'s graph" to start.`);
     changed();
   }
+  inlineAdder("addStudentBtn", "addStudentBox", "newGraphName", addStudent);
   $("addGraphBtn").addEventListener("click", addStudent);
-  $("newGraphName").addEventListener("keydown", (e) => {
-    if (e.key === "Enter") addStudent();
-    if (e.key === "Escape") { e.stopPropagation(); $("addStudentBox").classList.remove("open"); }
-  });
+
+  function addCamera() {
+    const name = $("newCamName").value.trim();
+    if (!CAM_RE.test(name)) { toast("Camera names look like F1_CAM_Library (floor prefix, then CAM_).", true); return; }
+    if (state.cameras[name]) { toast(`${name} already exists.`, true); return; }
+    const f = floorOf(name);
+    state.cameras[name] = { ...freePos(f), sees: [] };
+    if (!state.floors.includes(f)) state.floors.push(f);
+    if (view !== "all") view = f;
+    selectedCam = name; selected = null;
+    $("newCamName").value = ""; $("addCamBox").classList.remove("open");
+    toast(`Added ${name}. Drag it into place, then click the spots it should see.`);
+    changed();
+  }
+  inlineAdder("addCamBtn", "addCamBox", "newCamName", addCamera);
+  $("addCamConfirm").addEventListener("click", addCamera);
+
   $("delGraphBtn").addEventListener("click", (e) => {
     if (Object.keys(state.graphs).length <= 1) { setMsg("graphMsg", "Keep at least one student.", "bad"); return; }
     if (!confirmClick(e.currentTarget, `Click again to delete ${current}`)) return;
-    delete state.graphs[current];
-    current = Object.keys(state.graphs)[0];
-    selected = null;
-    setMsg("graphMsg", "Deleted.", "good");
-    changed();
+    delete state.graphs[current]; current = Object.keys(state.graphs)[0]; selected = null;
+    setMsg("graphMsg", "Deleted.", "good"); changed();
   });
 
   // Spots
   $("addNodeBtn").addEventListener("click", () => {
     const name = $("newNodeName").value.trim();
-    if (!NAME_RE.test(name)) { setMsg("nodeMsg", "Use a floor prefix, like F1_Library or F0_FabLab.", "bad"); return; }
+    if (!NAME_RE.test(name) || CAM_RE.test(name)) { setMsg("nodeMsg", "Use a floor prefix, like F1_Library or F0_FabLab.", "bad"); return; }
     if (state.locations[name]) { setMsg("nodeMsg", `${name} already exists.`, "bad"); return; }
     addLocation(name);
     if (view !== "all") view = floorOf(name);
-    selected = name;
+    selected = name; selectedCam = null;
     $("newNodeName").value = "";
     setMsg("nodeMsg", `Added ${name}. Drag it into place.`, "good");
     changed();
@@ -1136,7 +1699,7 @@ textarea {
     if (!names.length) { setMsg("nodeMsg", "Paste some spot names first.", "bad"); return; }
     const added = [], existed = [], bad = [];
     for (const n of names) {
-      if (!NAME_RE.test(n)) bad.push(n);
+      if (!NAME_RE.test(n) || CAM_RE.test(n)) bad.push(n);
       else if (state.locations[n]) existed.push(n);
       else { addLocation(n); added.push(n); }
     }
@@ -1158,19 +1721,12 @@ textarea {
   // ==================================================================
   let fileHandle = null;
   async function saveFile() {
-    const text = JSON.stringify(state, null, 2);
+    const text = JSON.stringify({ ...state, mapImages }, null, 2);
     try {
       if (window.showSaveFilePicker && window.top === window.self) {
-        if (!fileHandle) {
-          fileHandle = await window.showSaveFilePicker({
-            suggestedName: "student_paths.json",
-            types: [{ description: "Student paths", accept: { "application/json": [".json"] } }]
-          });
-        }
-        const w = await fileHandle.createWritable();
-        await w.write(text); await w.close();
-        setMsg("fileMsg", `Saved to ${fileHandle.name}. Ctrl+S saves again.`, "good");
-        return;
+        if (!fileHandle) fileHandle = await window.showSaveFilePicker({ suggestedName: "student_paths.json", types: [{ description: "Student paths", accept: { "application/json": [".json"] } }] });
+        const w = await fileHandle.createWritable(); await w.write(text); await w.close();
+        setMsg("fileMsg", `Saved to ${fileHandle.name}. Ctrl+S saves again.`, "good"); return;
       }
     } catch (e) { if (e && e.name === "AbortError") return; }
     try {
@@ -1179,24 +1735,24 @@ textarea {
     } catch { setMsg("fileMsg", "Download was cancelled.", "bad"); return; }
     try {
       const a = document.createElement("a");
-      a.href = URL.createObjectURL(new Blob([text], { type: "application/json" }));
-      a.download = "student_paths.json";
-      document.body.appendChild(a); a.click(); a.remove();
-      setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+      a.href = URL.createObjectURL(new Blob([text], { type: "application/json" })); a.download = "student_paths.json";
+      document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
       setMsg("fileMsg", "Downloaded student_paths.json.", "good");
     } catch { setMsg("fileMsg", "Couldn't save here. Copy the full file from Export instead.", "bad"); }
   }
   $("saveFileBtn").addEventListener("click", saveFile);
   $("openFileBtn").addEventListener("click", () => $("fileInput").click());
   $("fileInput").addEventListener("change", async (e) => {
-    const f = e.target.files && e.target.files[0];
-    e.target.value = "";
+    const f = e.target.files && e.target.files[0]; e.target.value = "";
     if (!f) return;
     try {
       const data = JSON.parse(await f.text());
       if (!loadInto(data)) throw new Error();
+      const oldFloors = Object.keys(mapImages);
+      mapImages = (data.mapImages && typeof data.mapImages === "object") ? data.mapImages : {};
+      for (const f of new Set([...oldFloors, ...Object.keys(mapImages)])) saveMapImage(f);
       fileHandle = null;
-      setMsg("fileMsg", `Opened ${f.name}.`, "good");
+      setMsg("fileMsg", `Opened ${f.name}.` + (data.cameras ? "" : " It had no cameras, so the default camera map was added."), "good");
       changed();
     } catch { setMsg("fileMsg", `${f.name} isn't a student paths file. Use one saved from this tool.`, "bad"); }
   });
