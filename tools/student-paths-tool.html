@@ -256,6 +256,14 @@ textarea {
 .artlist { margin: 6px 0 0; padding-left: 18px; font-size: 13px; }
 .artlist li { margin: 2px 0; }
 .chip.cam { color: var(--cam); border-color: var(--cam); }
+:root { --appear: #2E9E5B; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --appear: #6FDB8E; } }
+:root[data-theme="dark"] { --appear: #6FDB8E; }
+.node.appear-in circle.dot { fill: var(--appear); stroke: var(--paper); stroke-width: 3; }
+.node.appear-in text { fill: var(--appear); font-weight: 700; }
+.node.appear-out circle.dot { fill: var(--paper); stroke: var(--faint); stroke-width: 2; stroke-dasharray: 3 3; }
+.node.appear-out text { fill: var(--pencil); }
+.cam.ref { opacity: .45; pointer-events: none; }
 .floor-map { pointer-events: none; }
 .map-frame { fill: none; stroke: var(--ink); stroke-width: 2; stroke-dasharray: 8 6; pointer-events: none; }
 .adjusting { cursor: move; }
@@ -274,6 +282,7 @@ textarea {
       <span class="modes" role="group" aria-label="Mode">
         <button id="modePaths" aria-pressed="true">Paths</button>
         <button id="modeCams" aria-pressed="false">Cameras</button>
+        <button id="modeAppear" aria-pressed="false">Appear</button>
       </span>
       <span class="group" id="pathsTools">
         <div class="tabs" id="tabs" role="group" aria-label="Student"></div>
@@ -289,6 +298,14 @@ textarea {
         <span class="tab-input" id="addCamBox">
           <input id="newCamName" placeholder="F1_CAM_Library" aria-label="New camera name">
           <button class="btn primary" id="addCamConfirm">Add</button>
+        </span>
+      </span>
+      <span class="group" id="appearTools" hidden>
+        <div class="tabs" id="appearTabs" role="group" aria-label="Appear list"></div>
+        <button class="tab add" id="addAppearBtn">+ List</button>
+        <span class="tab-input" id="addAppearBox">
+          <input id="newAppearName" placeholder="e.g. Wakeel" aria-label="New appear list name">
+          <button class="btn primary" id="addAppearConfirm">Add</button>
         </span>
       </span>
       <span class="spacer"></span>
@@ -353,6 +370,7 @@ textarea {
         <select id="exportKind" aria-label="What to export">
           <option value="graph">This graph (g.nodes = …)</option>
           <option value="cameras">Camera map + minimap layout (c.cameras, c.positions)</option>
+          <option value="appear">Appear spots (a.spots = …)</option>
           <option value="locations">Spot list (l.nodes = …)</option>
           <option value="backup">Full file (JSON)</option>
         </select>
@@ -460,6 +478,7 @@ textarea {
   let view = 1;              // floor number or "all"
   let selected = null;       // selected spot
   let selectedCam = null;    // selected camera (cameras mode)
+  let currentAppear = "Joe"; // which appear list is open (appear mode)
   let connectMode = false;
   let flashTarget = null;
   let touched = false;
@@ -522,6 +541,18 @@ textarea {
         if (m && typeof m.w === "number" && typeof m.h === "number") out.maps[f] = { x: m.x || 0, y: m.y || 0, w: m.w, h: m.h, opacity: m.opacity ?? 0.6, aspect: m.aspect || m.h / m.w };
       }
     }
+    // Appear lists: rooms a non-walking student can show up in, with weights
+    // { "Joe": { "F1_1A": 2, "F1_ChemistryLab": 1 } }
+    out.appear = {};
+    if (data.appear && typeof data.appear === "object") {
+      for (const name in data.appear) {
+        const l = data.appear[name], clean = {};
+        if (l && typeof l === "object") for (const sp in l) { const w = Number(l[sp]); if (Number.isFinite(w)) clean[sp] = w; }
+        out.appear[name] = clean;
+      }
+    }
+    if (!Object.keys(out.appear).length) out.appear = { "Joe": {} };
+    out.hearingRange = Number(data.hearingRange) > 0 ? Number(data.hearingRange) : 700;
     out.floors = [...floorSet].filter((n) => Number.isInteger(n) && n >= 0);
     return out;
   }
@@ -660,6 +691,7 @@ textarea {
     delete state.locations[id];
     for (const n in state.graphs) { const g = state.graphs[n]; delete g[id]; for (const k in g) delete g[k][id]; }
     for (const c in state.cameras) state.cameras[c].sees = state.cameras[c].sees.filter((s) => s !== id);
+    for (const a in state.appear) delete state.appear[a][id];
     if (selected === id) selected = null;
   }
   function renameKey(obj, from, to) { const out = {}; for (const k in obj) out[k === from ? to : k] = obj[k]; return out; }
@@ -671,6 +703,7 @@ textarea {
       state.graphs[n] = g;
     }
     for (const c in state.cameras) state.cameras[c].sees = state.cameras[c].sees.map((s) => (s === from ? to : s));
+    for (const a in state.appear) state.appear[a] = renameKey(state.appear[a], from, to);
     const f = floorOf(to);
     if (!state.floors.includes(f)) state.floors.push(f);
     if (selected === from) selected = to;
@@ -800,7 +833,9 @@ textarea {
     svg.classList.toggle("connecting", mode === "paths" && connectMode);
     svg.textContent = "";
     drawBands();
-    if (mode === "paths") renderPathsMap(); else renderCamerasMap();
+    if (mode === "paths") renderPathsMap();
+    else if (mode === "cameras") renderCamerasMap();
+    else renderAppearMap();
   }
 
   function renderPathsMap() {
@@ -842,6 +877,50 @@ textarea {
       const p = pos[id], inGraph = g[id] !== undefined, isStop = inGraph && Object.keys(g[id]).length === 0;
       const cls = ["node", p.ghost ? "ghost" : inGraph ? "in" : "out", !p.ghost && isStop ? "stop" : "", selected === id ? "sel" : ""].join(" ").replace(/\s+/g, " ").trim();
       drawSpot(nodeLayer, id, p, cls);
+    }
+  }
+
+  function appearList() {
+    if (!state.appear[currentAppear]) currentAppear = Object.keys(state.appear)[0];
+    return state.appear[currentAppear];
+  }
+
+  // How loud music in a spot is at a camera, at full volume. Same formula as
+  // Joe.get_loudness_at() in Godot: (1 - distance / range)^2, x0.35 per floor apart.
+  function hearingAt(camId, spot) {
+    const c = state.cameras[camId], p = state.locations[spot];
+    if (!c || !p) return 0;
+    let near = Math.max(0, 1 - Math.hypot(c.x - p.x, c.y - p.y) / state.hearingRange);
+    near *= near;
+    return near * Math.pow(0.35, Math.abs(floorOf(camId) - floorOf(spot)));
+  }
+  function bestHearing(spot) {
+    let best = 0, cam = null;
+    for (const c in state.cameras) { const v = hearingAt(c, spot); if (v > best) { best = v; cam = c; } }
+    return { best, cam };
+  }
+
+  function renderAppearMap() {
+    const list = appearList();
+    const total = Object.values(list).reduce((a, w) => a + Math.max(0, Number(w) || 0), 0);
+    const pos = spotPositions(new Set());
+
+    // Cameras, faded, for reference: they're where the player listens from
+    const camLayer = el("g", {}, svg);
+    for (const c in state.cameras) {
+      const cp = camDisplayPos(c);
+      if (!cp) continue;
+      const g = el("g", { class: "cam ref" }, camLayer);
+      el("rect", { x: cp.x - 9, y: cp.y - 8, width: 18, height: 16, rx: 3, class: "body" }, g);
+      el("text", { x: cp.x, y: cp.y + 26, "text-anchor": "middle", class: "cam-label" }, g).textContent = short(c);
+    }
+
+    const nodeLayer = el("g", {}, svg);
+    for (const id in pos) {
+      const p = pos[id], inList = list[id] !== undefined;
+      const pct = inList && total > 0 ? Math.round((Math.max(0, Number(list[id]) || 0) / total) * 100) : 0;
+      const cls = ["node", inList ? "appear-in" : "appear-out", selected === id ? "sel" : ""].join(" ").trim();
+      drawSpot(nodeLayer, id, p, cls, inList ? `${short(id)} ${pct}%` : short(id));
     }
   }
 
@@ -909,13 +988,26 @@ textarea {
   function renderToolbar() {
     $("modePaths").setAttribute("aria-pressed", String(mode === "paths"));
     $("modeCams").setAttribute("aria-pressed", String(mode === "cameras"));
+    $("modeAppear").setAttribute("aria-pressed", String(mode === "appear"));
+    $("appearTools").hidden = mode !== "appear";
+    const at = $("appearTabs");
+    at.textContent = "";
+    for (const name of Object.keys(state.appear)) {
+      const b = document.createElement("button");
+      b.className = "tab"; b.textContent = name;
+      b.setAttribute("aria-pressed", String(name === currentAppear));
+      b.addEventListener("click", () => { currentAppear = name; selected = null; render(); });
+      at.appendChild(b);
+    }
     $("pathsTools").hidden = mode !== "paths";
     $("camTools").hidden = mode !== "cameras";
     $("studentSection").hidden = mode !== "paths";
     $("connectBtn").setAttribute("aria-pressed", String(connectMode));
     $("hint").innerHTML = mode === "paths"
       ? `Click a spot to select it. <kbd>Shift</kbd>+click another (or turn on Connect) to add a path. Drag spots, or nudge the selected one with arrow keys (<kbd>Shift</kbd> for bigger steps). Dashed spots at the edge belong to another floor: click one to go there. <kbd>Esc</kbd> deselects.`
-      : `Click a camera to select it, then click spots to add or remove them from its view. Drag cameras and spots to move them, or nudge the selected one with arrow keys. Solid spots are seen by a camera, dashed ones are blind spots. <kbd>Esc</kbd> deselects.`;
+      : mode === "cameras"
+      ? `Click a camera to select it, then click spots to add or remove them from its view. Drag cameras and spots to move them, or nudge the selected one with arrow keys. Solid spots are seen by a camera, dashed ones are blind spots. <kbd>Esc</kbd> deselects.`
+      : `Click rooms to add them to (or remove them from) ${esc(currentAppear)}'s list. Green rooms are where he can show up, with the chance of each. Faded orange icons are the cameras the player listens from.`;
 
     const tabs = $("tabs");
     tabs.textContent = "";
@@ -974,6 +1066,7 @@ textarea {
   function renderNodePanel() {
     const sec = $("nodeSection");
     if (mode === "cameras") { sec.innerHTML = cameraPanelHtml(); flashTarget = null; return; }
+    if (mode === "appear") { sec.innerHTML = appearPanelHtml(); flashTarget = null; return; }
 
     if (!selected || !state.locations[selected]) {
       sec.innerHTML = `<h2>${esc(current)}</h2><p class="muted">Select a spot on the map to see and edit where ${esc(current)} can go from there.</p>`;
@@ -1017,6 +1110,34 @@ textarea {
     html += renameBlock(id, "rename") + `<div class="row-btns"><button class="btn danger" data-act="delLoc">Delete spot everywhere</button></div>`;
     sec.innerHTML = html;
     flashTarget = null;
+  }
+
+  function appearPanelHtml() {
+    const list = appearList(), keys = Object.keys(list);
+    const total = keys.reduce((a, k) => a + Math.max(0, Number(list[k]) || 0), 0);
+    let html = `<h2><span class="node-name">${esc(currentAppear)}</span></h2>`;
+    if (!keys.length) {
+      html += `<p class="muted">No rooms yet. Click rooms on the map to add them. Each time ${esc(currentAppear)} appears, he picks one of these rooms, weighted like paths. (An empty list means any room in Godot.)</p>`;
+    } else {
+      html += `<p class="muted">Rooms ${esc(currentAppear)} can appear in, and how likely each is:</p><ul class="edges">`;
+      for (const k of keys) {
+        const w = Number(list[k]) || 0;
+        const pct = total > 0 ? Math.round((Math.max(0, w) / total) * 100) : 0;
+        html += `<li class="erow${flashTarget === k ? " flash" : ""}">
+          <button class="to" data-go="${esc(k)}" title="Select ${esc(k)}">${esc(k)}</button>
+          <span class="ctrl">
+            <button data-aw-dec="${esc(k)}" aria-label="Lower weight">−</button>
+            <input type="number" min="0" step="1" value="${w}" data-aw="${esc(k)}" aria-label="Weight for ${esc(k)}">
+            <button data-aw-inc="${esc(k)}" aria-label="Raise weight">+</button>
+          </span>
+          <span class="bar-wrap"><span class="pct-bar"><span style="width:${pct}%"></span></span><span class="pct">${pct}%</span></span>
+          <span class="extras"><button class="linkish red" data-aw-del="${esc(k)}">Remove</button></span></li>`;
+      }
+      html += `</ul>`;
+    }
+    html += `<div class="add-row"><select id="addAppear" aria-label="Add a room"><option value="">Add a room…</option>${optionsByFloor((k) => list[k] !== undefined)}</select><button class="btn" data-act="appearAdd">Add</button></div>`;
+    if (Object.keys(state.appear).length > 1) html += `<div class="row-btns"><button class="btn danger" data-act="appearDelete">Delete ${esc(currentAppear)}'s list</button></div>`;
+    return html;
   }
 
   function cameraPanelHtml() {
@@ -1070,6 +1191,21 @@ textarea {
   function renderChecks() {
     const chips = (list, cls, attr = "data-go") => `<div class="chips">${list.map((k) => `<button class="chip${cls ? " " + cls : ""}" ${attr}="${esc(k)}">${esc(k)}</button>`).join("")}</div>`;
     let html = "";
+    if (mode === "appear") {
+      const list = appearList(), keys = Object.keys(list);
+      const seen = keys.filter((k) => camsSeeing(k).length);
+      const faint = keys.filter((k) => bestHearing(k).best < 0.05);
+      html += `<div class="check-group"><p>${keys.length} room${keys.length === 1 ? "" : "s"}, ${seen.length} of them directly on camera.</p></div>`;
+      html += `<div class="slider-row" style="grid-template-columns: 110px 1fr"><label for="hearingRange">Hearing range</label><input type="number" id="hearingRange" min="50" step="10" value="${state.hearingRange}" style="border:1px solid var(--line);border-radius:6px;background:var(--panel);padding:2px 6px"></div>`;
+      html += `<p class="muted" style="margin:4px 0 10px">Keep this the same as Joe's Hearing Range in Godot.</p>`;
+      html += `<div class="check-group"><p>Can't be heard from any camera (${faint.length}): the player has no way to find him there.</p>${faint.length ? chips(faint, "red") : `<p class="muted">None</p>`}</div>`;
+      if (selected && list[selected] !== undefined) {
+        const b = bestHearing(selected);
+        html += `<div class="check-group"><p>${esc(selected)} is heard loudest on ${b.cam ? esc(b.cam) : "no camera"} (${Math.round(b.best * 100)}% at full volume).</p></div>`;
+      }
+      $("checks").innerHTML = html;
+      return;
+    }
     if (mode === "paths") {
       const g = graph();
       const stops = Object.keys(g).filter((k) => Object.keys(g[k]).length === 0);
@@ -1118,6 +1254,10 @@ textarea {
     ];
     return sees + "\n" + padBlock("c.positions", posEntries);
   }
+  function exportAppear() {
+    const list = appearList();
+    return padBlock("a.spots", Object.keys(list).map((k) => [k, String(Number(list[k]) || 0)]));
+  }
   function exportLocations() {
     const lines = [];
     for (const f of floors()) {
@@ -1131,7 +1271,7 @@ textarea {
   function renderExport() {
     const kind = $("exportKind").value;
     $("exportKind").options[0].textContent = `${current}'s graph (g.nodes = …)`;
-    $("exportText").value = kind === "graph" ? exportGraph() : kind === "cameras" ? exportCameras() : kind === "locations" ? exportLocations() : JSON.stringify(state, null, 2);
+    $("exportText").value = kind === "graph" ? exportGraph() : kind === "cameras" ? exportCameras() : kind === "appear" ? exportAppear() : kind === "locations" ? exportLocations() : JSON.stringify(state, null, 2);
     $("exportUpdated").textContent = `Updated ${new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}`;
   }
 
@@ -1165,6 +1305,24 @@ textarea {
   function doImport() {
     const text = $("importText").value.trim();
     if (!text) { setMsg("importMsg", "Paste something to import first.", "bad"); return; }
+    if (text.includes("a.spots")) {
+      let block;
+      try { block = parseGdDict(extractBlock(text, "a.spots") || ""); }
+      catch (e) { setMsg("importMsg", "Couldn't read that: " + e.message, "bad"); return; }
+      const clean = {}, added = [];
+      for (const sp in block) {
+        const w = Number(block[sp]);
+        if (!NAME_RE.test(sp) || CAM_RE.test(sp)) { setMsg("importMsg", `"${sp}" needs a floor prefix like F1_.`, "bad"); return; }
+        if (!Number.isFinite(w)) { setMsg("importMsg", `Weight for "${sp}" isn't a number.`, "bad"); return; }
+        if (!state.locations[sp]) { addLocation(sp); added.push(sp); }
+        clean[sp] = w;
+      }
+      appearList();
+      state.appear[currentAppear] = clean;
+      mode = "appear";
+      setMsg("importMsg", `Replaced ${currentAppear}'s rooms (${Object.keys(clean).length}).` + (added.length ? ` New spots: ${added.join(", ")}.` : ""), "good");
+      changed(); return;
+    }
     let data, positions = null;
     try {
       if (text.includes("c.cameras")) {
@@ -1367,11 +1525,12 @@ textarea {
   function setMode(m) {
     if (mode === m) return;
     mode = m; selected = null; selectedCam = null; connectMode = false; toast("");
-    $("exportKind").value = m === "cameras" ? "cameras" : "graph";
+    $("exportKind").value = m === "cameras" ? "cameras" : m === "appear" ? "appear" : "graph";
     render();
   }
   $("modePaths").addEventListener("click", () => setMode("paths"));
   $("modeCams").addEventListener("click", () => setMode("cameras"));
+  $("modeAppear").addEventListener("click", () => setMode("appear"));
 
   // ==================================================================
   // Map interaction
@@ -1436,6 +1595,7 @@ textarea {
     if (p.moved) { changed(); return; }
     if (p.cam) { handleCamClick(p.cam); return; }
     if (mode === "cameras") handleSpotClickCams(p.node, p.ghost);
+    else if (mode === "appear") handleSpotClickAppear(p.node, p.ghost);
     else handleSpotClickPaths(p.node, p.shift || e.shiftKey, p.ghost);
   });
   window.addEventListener("pointercancel", () => { press = null; });
@@ -1464,6 +1624,22 @@ textarea {
     selected = id; render();
   }
 
+  // Appear mode: clicking a room adds it to the list (or removes it)
+  function handleSpotClickAppear(id, ghost) {
+    if (ghost) { goTo(id); render(); return; }
+    const list = appearList();
+    if (list[id] !== undefined) {
+      delete list[id];
+      if (selected === id) selected = null;
+      toast(`${currentAppear} won't appear in ${id} anymore.`);
+    } else {
+      list[id] = 1;
+      selected = id; flashTarget = id;
+      toast(`${currentAppear} can now appear in ${id}.`);
+    }
+    changed();
+  }
+
   function handleCamClick(id) {
     selectedCam = selectedCam === id ? null : id;
     selected = null;
@@ -1478,6 +1654,7 @@ textarea {
     e.preventDefault();
     if (c) handleCamClick(c.getAttribute("data-cam"));
     else if (mode === "cameras") handleSpotClickCams(n.getAttribute("data-node"), n.hasAttribute("data-ghost"));
+    else if (mode === "appear") handleSpotClickAppear(n.getAttribute("data-node"), n.hasAttribute("data-ghost"));
     else handleSpotClickPaths(n.getAttribute("data-node"), e.shiftKey, n.hasAttribute("data-ghost"));
   });
 
@@ -1520,6 +1697,15 @@ textarea {
     const g = graph(), d = t.dataset;
 
     if (d.camGo) { goToCam(d.camGo); render(); return; }
+    // Appear lists
+    if (d.awInc) { const l = appearList(); l[d.awInc] = (Number(l[d.awInc]) || 0) + 1; changed(); return; }
+    if (d.awDec) { const l = appearList(); l[d.awDec] = Math.max(0, (Number(l[d.awDec]) || 0) - 1); changed(); return; }
+    if (d.awDel) { delete appearList()[d.awDel]; changed(); return; }
+    if (d.act === "appearAdd") { const v = $("addAppear").value; if (v) { appearList()[v] = 1; flashTarget = v; changed(); } return; }
+    if (d.act === "appearDelete") {
+      if (confirmClick(t, "Click again to delete")) { delete state.appear[currentAppear]; currentAppear = Object.keys(state.appear)[0]; changed(); }
+      return;
+    }
     if (d.go) {
       if (mode === "cameras") { const keepCam = selectedCam; goTo(d.go); selectedCam = null; if (keepCam) selected = d.go; }
       else goTo(d.go);
@@ -1569,6 +1755,16 @@ textarea {
 
   $("panel").addEventListener("input", (e) => {
     const inp = e.target;
+    if (inp.dataset && inp.dataset.aw !== undefined && inp.value !== "") {
+      appearList()[inp.dataset.aw] = Math.max(0, Number(inp.value) || 0);
+      queueSave(); renderMap(); renderExport();
+      return;
+    }
+    if (inp.id === "hearingRange" && Number(inp.value) > 0) {
+      state.hearingRange = Number(inp.value);
+      queueSave();
+      return;
+    }
     if (inp.dataset && inp.dataset.w !== undefined && selected && inp.value !== "") {
       graph()[selected][inp.dataset.w] = Math.max(0, Number(inp.value) || 0);
       queueSave(); renderMap(); renderExport();
@@ -1576,7 +1772,8 @@ textarea {
   });
   $("panel").addEventListener("change", (e) => {
     const inp = e.target;
-    if (inp.dataset && inp.dataset.w !== undefined) changed();
+    if (inp.dataset && (inp.dataset.w !== undefined || inp.dataset.aw !== undefined)) changed();
+    if (inp.id === "hearingRange") changed();
     if (inp.id === "exportKind") renderExport();
   });
 
@@ -1672,6 +1869,18 @@ textarea {
   }
   inlineAdder("addCamBtn", "addCamBox", "newCamName", addCamera);
   $("addCamConfirm").addEventListener("click", addCamera);
+
+  function addAppearList() {
+    const name = $("newAppearName").value.trim();
+    if (!name) { toast("Type a name for the list first.", true); return; }
+    if (state.appear[name]) { toast(`${name} already has a list.`, true); return; }
+    state.appear[name] = {}; currentAppear = name; selected = null;
+    $("newAppearName").value = ""; $("addAppearBox").classList.remove("open");
+    toast(`Added ${name}'s list. Click rooms on the map to add them.`);
+    changed();
+  }
+  inlineAdder("addAppearBtn", "addAppearBox", "newAppearName", addAppearList);
+  $("addAppearConfirm").addEventListener("click", addAppearList);
 
   $("delGraphBtn").addEventListener("click", (e) => {
     if (Object.keys(state.graphs).length <= 1) { setMsg("graphMsg", "Keep at least one student.", "bad"); return; }

@@ -5,8 +5,19 @@
 [ext_resource type="Script" uid="uid://csgqn3fr482nn" path="res://scripts/game_manager.gd" id="2_th6wt"]
 [ext_resource type="Script" uid="uid://bv8lx82wwbcep" path="res://scripts/animatronic.gd" id="3_o60qq"]
 [ext_resource type="Resource" path="res://data/graphs/graph_bees.tres" id="4_s11eh"]
+[ext_resource type="Script" uid="uid://dwqq2bywkx8wb" path="res://scripts/joe.gd" id="6_3hi2f"]
 [ext_resource type="PackedScene" uid="uid://h8npthix53uy" path="res://scenes/tablet.tscn" id="6_s11eh"]
+[ext_resource type="Script" uid="uid://7qanym0adcch" path="res://scripts/student_graph.gd" id="7_ywbc3"]
 [ext_resource type="Script" uid="uid://ciwcfy44imxev" path="res://scripts/dev/generate_graphs.gd" id="8_rfwdb"]
+[ext_resource type="Script" uid="uid://w0mrr61gmfj8" path="res://scripts/night_clock.gd" id="9_ywbc3"]
+[ext_resource type="Script" uid="uid://37y8umbo2p64" path="res://scripts/teacher_dispatch.gd" id="10_dfedx"]
+[ext_resource type="Script" uid="uid://bwwsoqeim8riw" path="res://scripts/clock_label.gd" id="11_clock"]
+[ext_resource type="FontFile" uid="uid://dn3c55xwnx2lq" path="res://assets/fonts/Anton-Regular.ttf" id="12_anton"]
+[ext_resource type="Script" uid="uid://bklomxc7njnab" path="res://scripts/joe_music.gd" id="13_jmusic"]
+
+[sub_resource type="Resource" id="Resource_dfedx"]
+script = ExtResource("7_ywbc3")
+metadata/_custom_type_script = "uid://7qanym0adcch"
 
 [node name="Night" type="Node2D" unique_id=167903392]
 script = ExtResource("1_7dt87")
@@ -19,6 +30,13 @@ script = ExtResource("2_th6wt")
 script = ExtResource("3_o60qq")
 graph = ExtResource("4_s11eh")
 starting_node = "F1_HallL1"
+
+[node name="Joe" type="Node" parent="." unique_id=1743745102]
+script = ExtResource("6_3hi2f")
+first_appearance_delay = 10.0
+student_id = 3
+graph = SubResource("Resource_dfedx")
+metadata/_custom_type_script = "uid://dwqq2bywkx8wb"
 
 [node name="Tablet" parent="." unique_id=953437328 instance=ExtResource("6_s11eh")]
 
@@ -42,5 +60,33 @@ text = "Principal Office (placeholder)"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="Node" type="Node" parent="." unique_id=494318151]
+[node name="ClockLabel" type="Label" parent="Office" unique_id=1925381205]
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -320.0
+offset_top = 16.0
+offset_right = -20.0
+offset_bottom = 72.0
+grow_horizontal = 0
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 8
+theme_override_fonts/font = ExtResource("12_anton")
+theme_override_font_sizes/font_size = 40
+text = "9 AM"
+horizontal_alignment = 2
+script = ExtResource("11_clock")
+
+[node name="JoeMusic" type="Node" parent="." unique_id=949015690 node_paths=PackedStringArray("tablet")]
+script = ExtResource("13_jmusic")
+tablet = NodePath("../Tablet")
+
+[node name="NightClock" type="Node" parent="." unique_id=1028250175]
+script = ExtResource("9_ywbc3")
+seconds_per_hour = 60.0
+
+[node name="TeacherDispatch" type="Node" parent="." unique_id=2065994102]
+script = ExtResource("10_dfedx")
+
+[node name="TempGraphGenerator" type="Node" parent="." unique_id=494318151]
 script = ExtResource("8_rfwdb")

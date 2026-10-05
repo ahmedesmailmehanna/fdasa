@@ -26,6 +26,7 @@ func _ready() -> void:
 	# Start lowered: parked just below the bottom of the window, hidden
 	screen.visible = false
 	screen.position.y = _screen_height()
+	camera_system.set_active(false)
 
 	hover_bar.mouse_entered.connect(toggle)
 	camera_system.camera_changed.connect(camera_changed.emit)
@@ -53,11 +54,14 @@ func set_open(open: bool) -> void:
 	_flip_tween = create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	if open:
 		screen.visible = true
+		camera_system.set_active(true)   # redraws the feed before it slides up
 		_flip_tween.tween_property(screen, "position:y", 0.0, flip_time)
 		_flip_tween.tween_callback(camera_system.burst_static)
 	else:
 		_flip_tween.tween_property(screen, "position:y", _screen_height(), flip_time)
 		_flip_tween.tween_callback(screen.hide)
+		# Only once it's fully down, so the feed stays live during the flip
+		_flip_tween.tween_callback(camera_system.set_active.bind(false))
 
 	_update_hover_label()
 	tablet_toggled.emit(open)

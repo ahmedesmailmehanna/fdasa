@@ -40,7 +40,8 @@ func _draw() -> void:
 
 	# Name under the circle, with a dark outline so it reads over the map
 	if label != "":
-		var font := ThemeDB.fallback_font
+		# The tablet's font (set by CameraSystem's theme), or Godot's default
+		var font := get_theme_default_font()
 		var fs := 15
 		var w := font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
 		var pos := Vector2(c.x - w / 2.0, c.y + radius + 18.0)

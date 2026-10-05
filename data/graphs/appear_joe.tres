@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="AppearSpots" format=3]
+
+[ext_resource type="Script" path="res://scripts/appear_spots.gd" id="1_8yyro"]
+
+[resource]
+script = ExtResource("1_8yyro")
+spots = {
+"F1_1A": 1,
+"F1_1F": 1,
+"F1_BiologyLab": 5,
+"F1_HallR2": 1,
+"F1_StairsL": 1,
+"F1_StairsR": 3
+}
