@@ -45,11 +45,10 @@ const NEVER_HERE: Array[String] = ["F1_PrincipalOffice", "F1_OfficeHall"]
 @export var speed_at_level_20 := 1.5
 
 @export_group("Debug")
-# Prints everything Joe does to the Output tab. Turn off to silence him.
-@export var debug_log := true
+# (debug_log, the on/off switch for Joe's lines, comes from Animatronic.)
 # While blasting, print a line each time the music climbs past another
-# multiple of this (25 -> at 25, 50, 75, 100). 0 = never.
-@export var debug_music_step := 25.0
+# multiple of this (50 -> at 50 and 100). 0 = never.
+@export var debug_music_step := 50.0
 
 var music_level := 0.0          # 0 = silent, 100 = full blast
 var is_music_blasting := false
@@ -58,11 +57,9 @@ var is_music_blasting := false
 var music_spot := ""
 var _hide_timer := 0.0          # counts down while hidden; at 0 he appears
 
-var _night_time := 0.0          # seconds since his level was set (for log timestamps)
+var _night_time := 0.0          # seconds since his level was set
 var _appeared_at := 0.0         # _night_time when the current song started
-var _appear_count := 0          # how many times he has appeared tonight
 var _next_music_mark := 0.0     # next music level that gets a log line
-var _fading := false            # true after he's stopped, until the music hits 0
 
 func _ready() -> void:
 	# Not calling super._ready(): Joe starts hidden, not on a spot.
@@ -82,10 +79,6 @@ func set_level(level: int) -> void:
 	if aggression > 0:
 		_hide_timer = first_appearance_delay
 		set_process(true)
-		var rooms := "any room" if appear_spots == null or appear_spots.spots.is_empty() else "%d designed rooms" % appear_spots.spots.size()
-		_log("level %d. First appearance in %ds. Can appear in %s." % [level, int(first_appearance_delay), rooms])
-	else:
-		_log("level 0: disabled for this night.")
 
 func _process(delta: float) -> void:
 	_night_time += delta
@@ -94,9 +87,6 @@ func _process(delta: float) -> void:
 		_log_music_marks()
 	else:
 		music_level = move_toward(music_level, 0.0, music_decay_per_sec * delta)
-		if _fading and music_level <= 0.0:
-			_fading = false
-			_log("music has faded to 0. Students are back to normal.")
 		_hide_timer -= delta
 		if _hide_timer <= 0.0:
 			_appear()
@@ -123,15 +113,12 @@ func _appear() -> void:
 	music_spot = current_node
 	game_manager.on_animatronic_moved(self, current_node)
 	is_music_blasting = true
-	_appear_count += 1
 	_appeared_at = _night_time
-	_fading = false
 	if debug_music_step > 0.0:
 		_next_music_mark = (floorf(music_level / debug_music_step) + 1.0) * debug_music_step
 	var cams := _cameras_seeing(current_node)
-	_log("APPEARED in %s (appearance #%d). Music starts at %d. %s" % [
-		current_node, _appear_count, int(music_level),
-		"Visible on: " + ", ".join(cams) if not cams.is_empty() else "NO camera sees this room, he can only be found by ear."])
+	_log("appeared in %s (%s)" % [current_node,
+		"on " + ", ".join(cams) if not cams.is_empty() else "on no camera"])
 	music_started.emit(current_node)
 
 # Called by TeacherDispatch when a teacher reaches Joe's room.
@@ -146,8 +133,7 @@ func get_stopped() -> void:
 	_hide_timer = rng.randf_range(
 		lerpf(hide_time_at_level_1.x, hide_time_at_level_20.x, t),
 		lerpf(hide_time_at_level_1.y, hide_time_at_level_20.y, t))
-	_fading = music_level > 0.0
-	_log("STOPPED in %s after %ds of music (peaked at %d). Hidden for %ds." % [
+	_log("stopped in %s after %ds (music %d), back in %ds" % [
 		spot, int(_night_time - _appeared_at), int(music_level), int(_hide_timer)])
 	music_stopped.emit(spot)
 
@@ -171,31 +157,23 @@ func _all_spots() -> Array[String]:
 func get_loudness_at(listener_pos: Vector2, listener_floor: String) -> float:
 	if music_level <= 0.0 or music_spot == "" or not camera_map.positions.has(music_spot):
 		return 0.0
-	var joe_pos: Vector2 = camera_map.positions[music_spot]
-	# 1 right next to him, 0 at hearing_range or further; squared so it
-	# drops off quickly and the nearest camera clearly stands out
-	var near := clampf(1.0 - listener_pos.distance_to(joe_pos) / hearing_range, 0.0, 1.0)
-	near *= near
-	# Every floor in between muffles it
-	var floors_apart := absi(CameraSystem.floor_of(music_spot).to_int() - listener_floor.to_int())
-	near *= pow(floor_dampening, floors_apart)
-	return near * (music_level / 100.0)
+	# Distance and floors: the shared rule every positional sound uses
+	var heard := Hearing.loudness(listener_pos, listener_floor,
+		camera_map.positions[music_spot], CameraSystem.floor_of(music_spot),
+		hearing_range, floor_dampening)
+	return heard * (music_level / 100.0)
 
 # --- Debug log ---------------------------------------------------------------
 
-# Prints one line to Output, e.g. "[Joe 0:42] APPEARED in F1_1B ..."
-# The time is minutes:seconds since the night started.
-func _log(text: String) -> void:
-	if debug_log:
-		print("[Joe %d:%02d] %s" % [int(_night_time) / 60, int(_night_time) % 60, text])
+# (_log itself comes from Animatronic, so Joe's lines look like everyone's.)
 
 # While blasting: one line each time the music passes a debug_music_step mark,
 # with what it's doing to the other students at that point.
 func _log_music_marks() -> void:
 	if debug_music_step <= 0.0 or music_level < _next_music_mark:
 		return
-	_log("music at %d in %s. Students get +%.1f aggression and move %.2fx faster." % [
-		int(_next_music_mark), current_node, get_aggression_bonus(), get_speed_multiplier()])
+	_log("music at %d: students +%.1f aggression, %.2fx speed" % [
+		int(_next_music_mark), get_aggression_bonus(), get_speed_multiplier()])
 	_next_music_mark += debug_music_step
 	if _next_music_mark > 100.0:
 		_next_music_mark = INF   # nothing left to report until he's stopped

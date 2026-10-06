@@ -10,6 +10,8 @@ class_name Tablet
 signal tablet_toggled(is_open: bool)
 # Re-emitted from CameraSystem, so listeners only need to know the tablet.
 signal camera_changed(camera_id: String)
+# Re-emitted from CameraSystem: the minimap switched to another floor.
+signal floor_changed(floor_id: String)
 
 @export var flip_time := 0.25     # seconds for the flip up / down
 @export var toggle_key := KEY_SPACE
@@ -30,6 +32,7 @@ func _ready() -> void:
 
 	hover_bar.mouse_entered.connect(toggle)
 	camera_system.camera_changed.connect(camera_changed.emit)
+	camera_system.floor_changed.connect(floor_changed.emit)
 	get_viewport().size_changed.connect(_on_resized)
 	_update_hover_label()
 

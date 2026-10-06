@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="SoundEvent" format=3 uid="uid://bhkj61k6a7cn4"]
+
+[ext_resource type="Script" uid="uid://cgphmduetxnj1" path="res://scripts/audio/sound_event.gd" id="1_vfm2l"]
+[ext_resource type="AudioStream" uid="uid://c604smpddcu3t" path="res://assets/audio/sfx/teacher_call.wav" id="2_f8esg"]
+
+[resource]
+script = ExtResource("1_vfm2l")
+stream = ExtResource("2_f8esg")
+volume_db = -3.0
+metadata/_custom_type_script = "uid://cgphmduetxnj1"

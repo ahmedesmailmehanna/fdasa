@@ -14,9 +14,14 @@ config/name="fdasa"
 run/main_scene="uid://cxm5ckyf1cjp"
 config/features=PackedStringArray("4.6", "Forward Plus")
 
+[audio]
+
+buses/default_bus_layout="uid://dnnucnucwqj25"
+
 [autoload]
 
 GameState="*uid://fr2dtyd07rmj"
+Sfx="*uid://dgujh1esrv34m"
 
 [display]
 

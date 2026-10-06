@@ -5,10 +5,16 @@
 [resource]
 script = ExtResource("1_8yyro")
 spots = {
-"F1_1A": 1,
-"F1_1F": 1,
-"F1_BiologyLab": 5,
-"F1_HallR2": 1,
-"F1_StairsL": 1,
-"F1_StairsR": 3
+"F0_BoysWC": 1,
+"F0_FabLab1": 1,
+"F0_Gym": 1,
+"F1_1A": 2,
+"F1_1F": 2,
+"F1_BiologyLab": 2,
+"F1_ChemistryLab": 2,
+"F2_2B": 1,
+"F2_2C": 1,
+"F2_ArtRoom": 1,
+"F2_PhysicsLab": 1,
+"F2_StairsR": 1
 }

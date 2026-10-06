@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="SoundEvent" format=3 uid="uid://cvekrvp6a3st3"]
+
+[ext_resource type="Script" uid="uid://cgphmduetxnj1" path="res://scripts/audio/sound_event.gd" id="1_agmyb"]
+[ext_resource type="AudioStream" uid="uid://bivmsolc13ck4" path="res://assets/audio/ui/camera_switch.wav" id="2_8ak7a"]
+
+[resource]
+script = ExtResource("1_agmyb")
+stream = ExtResource("2_8ak7a")
+bus = &"UI"
+volume_db = -8.0
+pitch_range = Vector2(0.97, 1.03)
+metadata/_custom_type_script = "uid://cgphmduetxnj1"

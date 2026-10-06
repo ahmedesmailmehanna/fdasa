@@ -7,11 +7,18 @@ class_name TeacherDispatch
 
 signal uses_changed(uses: int)
 signal teacher_sent(spot: String)                       # hook for the phone voice line later
+# A teacher reached the room. Always fires, whatever they found there.
 signal teacher_arrived(spot: String, stopped_joe: bool)
+# Exactly one of these two fires right after teacher_arrived:
+signal teacher_found_joe(spot: String)     # Joe was blasting there and got stopped
+signal teacher_missed_joe(spot: String)    # wrong room, or Joe wasn't playing: a wasted teacher
+# The player asked for a teacher but none could go.
+# reason is "none_left" or "busy" (one is already on the way).
+signal send_refused(spot: String, reason: String)
 
 @export var max_uses := 3
 @export var travel_time := 4.0   # seconds between the call and the teacher arriving
-# Prints every call, arrival and refill to the Output tab.
+# Prints every call, arrival and refill to Output. See dev_log.gd.
 @export var debug_log := true
 
 var uses := 3
@@ -39,13 +46,15 @@ func can_send() -> bool:
 func send_teacher(spot: String) -> bool:
 	if not can_send():
 		if uses <= 0:
-			_log("can't send to %s: no teachers left." % spot)
+			_log("can't go to %s: none left" % spot)
+			send_refused.emit(spot, "none_left")
 		else:
-			_log("can't send to %s: one is already on the way to %s." % [spot, en_route_spot])
+			_log("can't go to %s: one is already heading to %s" % [spot, en_route_spot])
+			send_refused.emit(spot, "busy")
 		return false
 	uses -= 1
 	en_route_spot = spot
-	_log("sent to %s, arrives in %ds (%d of %d left)." % [spot, int(travel_time), uses, max_uses])
+	_log("sent to %s, arrives in %ds (%d/%d left)" % [spot, int(travel_time), uses, max_uses])
 	uses_changed.emit(uses)
 	teacher_sent.emit(spot)
 	get_tree().create_timer(travel_time).timeout.connect(_on_arrived)
@@ -58,23 +67,25 @@ func _on_arrived() -> void:
 	var joe := game_manager.joe
 	var stopped := joe != null and joe.is_blasting_at(spot)
 	if stopped:
-		_log("arrived at %s: Joe is here, stopping him." % spot)
+		_log("found Joe in %s" % spot)
 		joe.get_stopped()
-	elif joe == null:
-		_log("arrived at %s: nothing there (this night has no Joe)." % spot)
-	elif joe.is_music_blasting:
-		_log("arrived at %s: WRONG ROOM, Joe is blasting in %s. Teacher wasted." % [spot, joe.current_node])
+	elif joe != null and joe.is_music_blasting:
+		_log("missed Joe: went to %s, he's in %s" % [spot, joe.current_node])
 	else:
-		_log("arrived at %s: Joe isn't playing right now. Teacher wasted." % spot)
+		_log("found nobody in %s (Joe isn't playing)" % spot)
 	teacher_arrived.emit(spot, stopped)
+	if stopped:
+		teacher_found_joe.emit(spot)
+	else:
+		teacher_missed_joe.emit(spot)
 
 # +1 use every in-game hour, capped at max_uses
 func _on_hour_changed(_hour: int) -> void:
 	if uses < max_uses:
 		uses += 1
-		_log("new hour: +1 teacher (%d of %d)." % [uses, max_uses])
+		_log("+1 for the new hour (%d/%d)" % [uses, max_uses])
 		uses_changed.emit(uses)
 
 func _log(text: String) -> void:
 	if debug_log:
-		print("[Teacher] ", text)
+		DevLog.event("Teacher", text)

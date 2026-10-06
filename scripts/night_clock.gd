@@ -25,7 +25,7 @@ func _process(delta: float) -> void:
 		return
 	_elapsed -= seconds_per_hour
 	hour += 1
-	print("Clock: ", get_time_text())
+	DevLog.event("Clock", get_time_text() + (": night survived" if hour >= end_hour else ""))
 	hour_changed.emit(hour)
 	if hour >= end_hour:
 		set_process(false)

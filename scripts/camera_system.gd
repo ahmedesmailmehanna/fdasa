@@ -8,6 +8,8 @@ class_name CameraSystem
 
 # Fired when the player switches to a different camera.
 signal camera_changed(camera_id: String)
+# Fired when the minimap switches to another floor (the feed doesn't change).
+signal floor_changed(floor_id: String)
 # Fired when a student walks onto or off a spot the CURRENT camera sees.
 signal watched_spot_changed(camera_id: String)
 
@@ -52,7 +54,7 @@ const FLOOR_ACTIVE := Color(1.0, 0.8, 0.35)
 @onready var cam_name: Label = %CamName
 @onready var debug_info: Label = %DebugInfo
 @onready var cam_map: Control = %CamMap
-@onready var floor_buttons: HBoxContainer = %FloorButtons
+@onready var floor_buttons: BoxContainer = %FloorButtons
 
 var game_manager: GameManager
 var current_camera := ""   # the camera on the feed
@@ -132,7 +134,9 @@ func set_active(on: bool) -> void:
 # Input: a floor prefix, e.g. "F0" or "F1"
 # Output: none. Rebuilds the minimap buttons. No camera on the new floor is
 #         selected, unless the feed's camera happens to be on it.
+#         Emits floor_changed if the floor is a different one.
 func switch_floor(floor_id: String) -> void:
+	var switched := floor_id != current_floor
 	current_floor = floor_id
 	for b: Button in floor_buttons.get_children():
 		b.set_pressed_no_signal(b.get_meta("floor") == floor_id)
@@ -150,6 +154,8 @@ func switch_floor(floor_id: String) -> void:
 	var art := MAP_ART % floor_id
 	_map_tex = load(art) if ResourceLoader.exists(art) else null
 	_rebuild_points()
+	if switched:
+		floor_changed.emit(floor_id)
 
 # Call this whenever the player picks a different camera to look at.
 # Input: a camera id, e.g. "F1_CAM_HallL"
@@ -298,6 +304,7 @@ func _layout_map() -> void:
 			b.position = Vector2(fallback_x, cam_map.size.y - b.size.y - 8.0)
 			fallback_x += b.size.x + 6.0
 	_place_teacher_ui()
+	_place_floor_buttons()
 	cam_map.queue_redraw()
 
 # Draws the minimap panel, the spots, and a "YOU" marker. Buttons draw on top.
@@ -469,8 +476,9 @@ func _show_status(text: String, seconds := 4.0) -> void:
 		if _status_timer == t:   # a newer message replaced this one: leave it
 			_teacher_status.text = "")
 
-# Floor tabs above the minimap, styled like the camera circles: dark with a
-# white outline, amber when it's the floor the minimap is showing.
+# Floor tabs stacked in the map's bottom-left corner (the TEACHER button has
+# the bottom-right), highest floor on top like the building. Styled like the
+# camera circles: dark with a white outline, amber for the floor on the map.
 func _build_floor_buttons() -> void:
 	floor_buttons.add_theme_constant_override("separation", 8)
 
@@ -478,7 +486,9 @@ func _build_floor_buttons() -> void:
 	var hover := _floor_style(FLOOR_IDLE, Color.WHITE, 3)
 	var on := _floor_style(FLOOR_ACTIVE, FLOOR_ACTIVE, 2)
 
-	for f in get_floors():
+	var floors := get_floors()
+	floors.reverse()   # the stack fills top to bottom, so start with the top floor
+	for f in floors:
 		var b := Button.new()
 		b.text = "FLOOR " + f.trim_prefix("F")   # "F1" -> "FLOOR 1"
 		b.toggle_mode = true
@@ -501,6 +511,12 @@ func _build_floor_buttons() -> void:
 		b.set_meta("floor", f)
 		b.pressed.connect(switch_floor.bind(f))
 		floor_buttons.add_child(b)
+
+# Keeps the floor stack in the map's bottom-left corner (the map moves and
+# resizes with the window).
+func _place_floor_buttons() -> void:
+	floor_buttons.reset_size()   # shrink to fit the buttons
+	floor_buttons.position = cam_map.position + Vector2(8, cam_map.size.y - floor_buttons.size.y - 8)
 
 # Input: fill colour, outline colour, outline thickness in pixels
 # Output: a rounded box used as one state of a floor tab

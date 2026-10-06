@@ -6,6 +6,15 @@ class_name GameManager
 # Fired after any student changes spot. CameraSystem listens to this so the
 # feed you're looking at updates live when someone walks in or out of view.
 signal student_moved(student: Animatronic, from_spot: String, to_spot: String)
+# Fired when a student arrives at the office door (office_door_spot), right
+# after student_moved. This is where door logic, a warning sound or a
+# jumpscare hooks in, without caring which student it is.
+signal student_reached_office(student: Animatronic)
+# Fired when a student who was at the office door moves away or leaves the map.
+signal student_left_office(student: Animatronic)
+
+# The spot right outside the player's office: the end of every walker's path.
+@export var office_door_spot := "F1_OfficeHall"
 
 # Who is standing where. A spot can hold SEVERAL students at once
 # (Bees and Meer can both end up on F1_OfficeHall or a shared hallway).
@@ -37,6 +46,7 @@ func on_animatronic_moved(a: Animatronic, new_spot: String) -> void:
 	_remove(a)
 	_place(a, new_spot)
 	student_moved.emit(a, old_spot, new_spot)
+	_check_office(a, old_spot, new_spot)
 
 # Called when a student leaves the map altogether (Joe going back into hiding).
 # Input: the student who left.
@@ -48,6 +58,20 @@ func on_animatronic_left(a: Animatronic) -> void:
 		return   # wasn't on the map anyway
 	_remove(a)
 	student_moved.emit(a, old_spot, "")
+	_check_office(a, old_spot, "")
+
+# Emits the office signals when a move starts or ends at the office door.
+func _check_office(a: Animatronic, from_spot: String, to_spot: String) -> void:
+	if from_spot == to_spot:
+		return
+	if to_spot == office_door_spot:
+		if a.debug_log:
+			DevLog.event(a.get_display_name(), "REACHED THE OFFICE DOOR (%s)" % to_spot)
+		student_reached_office.emit(a)
+	elif from_spot == office_door_spot:
+		if a.debug_log:
+			DevLog.event(a.get_display_name(), "left the office door")
+		student_left_office.emit(a)
 
 # Input: a spot id, e.g. "F1_HallL2"
 # Output: every student standing there right now (empty Array if nobody).

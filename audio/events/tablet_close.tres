@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="SoundEvent" format=3 uid="uid://u42qbuq2twnb"]
+
+[ext_resource type="Script" uid="uid://cgphmduetxnj1" path="res://scripts/audio/sound_event.gd" id="1_ymadg"]
+[ext_resource type="AudioStream" uid="uid://dyyghgi3jrlhh" path="res://assets/audio/ui/tablet_flip.wav" id="2_dphdy"]
+
+[resource]
+script = ExtResource("1_ymadg")
+stream = ExtResource("2_dphdy")
+bus = &"UI"
+volume_db = -40.0
+pitch_range = Vector2(0.8, 0.85)
+metadata/_custom_type_script = "uid://cgphmduetxnj1"

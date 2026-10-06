@@ -10,6 +10,8 @@ class_name Animatronic
 # The "stay" weight rolled against aggression. Higher = lazier student.
 # 10 means aggression 10 is a 50/50 chance to move.
 @export var stay_weight := 10.0
+# Prints this student's events (moves, arrivals) to Output. See dev_log.gd.
+@export var debug_log := true
 
 # --- Set by the night from the config, not in the Inspector ---
 # 0 = disabled, 1..20 = difficulty
@@ -19,6 +21,7 @@ var current_node: String
 var game_manager: GameManager
 var rng := RandomNumberGenerator.new()
 var _time_until_move := 0.0   # counts down in _process, faster with Joe's music
+var _warned_lost := false     # so the "not in my graph" warning prints once
 
 func _ready() -> void:
 	current_node = starting_node
@@ -33,7 +36,6 @@ func _ready() -> void:
 # Input: this student's level from the config (0..20)
 # Output: none. 0 = stays disabled all night, anything else starts the countdown.
 func set_level(level: int) -> void:
-	print(name, " (", Students.Id.keys()[student_id], ") level set to ", level)
 	aggression = level
 	if aggression > 0:
 		_schedule_next_move()
@@ -59,18 +61,19 @@ func _attempt_move() -> void:
 	var move_chance := move_weight / (move_weight + stay_weight)
 
 	if rng.randf() >= move_chance:
-		print(name, " stayed at ", current_node, " (", snappedf(move_chance * 100, 1), "% chance)")
 		_schedule_next_move()
 		return
 
-	
 	# --- Step 2 ---
 	# e.g. {"F1_HallL3": 3, "F1_MrNabil": 1} -> HallL3 is 3x as likely
 	var options: Dictionary = graph.nodes.get(current_node, {})
-	
-	if options.is_empty():
-		print(name, " has nowhere to go from '", current_node, "' (not in graph, or a stop node)")
-	
+
+	# An empty {} is a stop spot (the office door): staying there is correct.
+	# A spot that isn't in the graph at all is a mistake in the data.
+	if not graph.nodes.has(current_node) and not _warned_lost:
+		_warned_lost = true
+		push_warning("%s is on '%s', which isn't in its graph, so it can't move." % [get_display_name(), current_node])
+
 	if not options.is_empty():
 		var ids: Array = options.keys()
 		var weights := PackedFloat32Array(options.values())
@@ -80,9 +83,10 @@ func _attempt_move() -> void:
 		# weight is 0, which we treat as "don't move this tick".
 		var picked := rng.rand_weighted(weights)
 		if picked != -1:
+			var from := current_node
 			current_node = ids[picked]
+			_log("moved %s -> %s" % [from, current_node])
 			game_manager.on_animatronic_moved(self, current_node)
-			print(name, " moved to: ", current_node)
 
 	_schedule_next_move()
 
@@ -106,3 +110,13 @@ func get_frame_for(camera_id: String, spot_id: String) -> Texture2D:
 # Output: this student's asset folder name, e.g. Students.Id.BEES -> "bees"
 func get_art_name() -> String:
 	return Students.Id.keys()[student_id].to_lower()
+
+# Output: this student's name for logs and UI, e.g. Students.Id.BEES -> "Bees"
+func get_display_name() -> String:
+	var n := get_art_name()
+	return n.left(1).to_upper() + n.substr(1)
+
+# Prints one line about this student, in the shared format (see dev_log.gd).
+func _log(text: String) -> void:
+	if debug_log:
+		DevLog.event(get_display_name(), text)

@@ -20,9 +20,13 @@ func _ready() -> void:
 	# 2. Every student: look up its level by id and apply it.
 	#    Parent _ready runs after all children, so they've all joined
 	#    the "students" group by now.
-	print("students found: ", get_tree().get_nodes_in_group("students"))
-	for s in get_tree().get_nodes_in_group("students"):
-		s.set_level(config.get_level(s.student_id))
+	DevLog.start_night()   # log times count from here
+	var roster: PackedStringArray = []
+	for s: Animatronic in get_tree().get_nodes_in_group("students"):
+		var level := config.get_level(s.student_id)
+		s.set_level(level)
+		roster.append("%s %s" % [s.get_display_name(), str(level) if level > 0 else "off"])
+	DevLog.event("Night", "started: " + ", ".join(roster))
 
 	# --- Test setup (temporary) ---
 	test_student.graph = load("res://data/graphs/graph_bees.tres")

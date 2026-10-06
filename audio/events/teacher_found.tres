@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="SoundEvent" format=3 uid="uid://dujugtwadmhya"]
+
+[ext_resource type="Script" uid="uid://cgphmduetxnj1" path="res://scripts/audio/sound_event.gd" id="1_8uvg1"]
+[ext_resource type="AudioStream" uid="uid://cb3qm074b0n1m" path="res://assets/audio/voice/teacher/teacher_found_en_1.wav" id="1_k2qkw"]
+[ext_resource type="AudioStream" uid="uid://p8t3vat88yt4" path="res://assets/audio/voice/teacher/teacher_found_ar_1.wav" id="2_3xop8"]
+[ext_resource type="AudioStream" uid="uid://dlyx7ekvtbn27" path="res://assets/audio/voice/teacher/teacher_found_ar_2.wav" id="3_3c4eq"]
+
+[sub_resource type="AudioStreamRandomizer" id="AudioStreamRandomizer_dhya5"]
+streams_count = 2
+stream_0/stream = ExtResource("2_3xop8")
+stream_1/stream = ExtResource("3_3c4eq")
+
+[sub_resource type="AudioStreamRandomizer" id="AudioStreamRandomizer_b23q1"]
+streams_count = 1
+stream_0/stream = ExtResource("1_k2qkw")
+
+[resource]
+script = ExtResource("1_8uvg1")
+stream = SubResource("AudioStreamRandomizer_dhya5")
+bus = &"Voice"
+stream_en = SubResource("AudioStreamRandomizer_b23q1")
+metadata/_custom_type_script = "uid://cgphmduetxnj1"

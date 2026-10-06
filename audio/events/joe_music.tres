@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="SoundEvent" format=3 uid="uid://d3iir4p131124"]
+
+[ext_resource type="Script" uid="uid://cgphmduetxnj1" path="res://scripts/audio/sound_event.gd" id="1_6t8ev"]
+[ext_resource type="AudioStream" uid="uid://d0twa0k2qvwxf" path="res://assets/audio/joe/joe1.mp3" id="2_up7qd"]
+[ext_resource type="AudioStream" uid="uid://0ilco0h41r52" path="res://assets/audio/joe/joe2.mp3" id="3_nd4nv"]
+[ext_resource type="AudioStream" uid="uid://6yd13dy2u8c2" path="res://assets/audio/joe/joe3.mp3" id="4_y5vl1"]
+[ext_resource type="AudioStream" uid="uid://ddbbf84tbg4x6" path="res://assets/audio/joe/joe4.mp3" id="5_wui8h"]
+[ext_resource type="AudioStream" uid="uid://cr5mldwfx73vt" path="res://assets/audio/joe/joe5.mp3" id="6_y5vl1"]
+[ext_resource type="AudioStream" uid="uid://x58d2hcd27jl" path="res://assets/audio/joe/joe6.mp3" id="7_wui8h"]
+
+[sub_resource type="AudioStreamRandomizer" id="AudioStreamRandomizer_3nrkt"]
+streams_count = 6
+stream_0/stream = ExtResource("2_up7qd")
+stream_1/stream = ExtResource("3_nd4nv")
+stream_2/stream = ExtResource("4_y5vl1")
+stream_3/stream = ExtResource("5_wui8h")
+stream_4/stream = ExtResource("6_y5vl1")
+stream_5/stream = ExtResource("7_wui8h")
+
+[resource]
+script = ExtResource("1_6t8ev")
+stream = SubResource("AudioStreamRandomizer_3nrkt")
+bus = &"Music"
+metadata/_custom_type_script = "uid://cgphmduetxnj1"

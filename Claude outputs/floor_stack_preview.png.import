@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://c0g83rf5qwv87"
-path="res://.godot/imported/office_clock_preview.png-6e1c80b415c761ff6c4a44f2b2c5d378.ctex"
+uid="uid://7dg7qyf2tvfo"
+path="res://.godot/imported/floor_stack_preview.png-94f028b1d425281c0ce01d0efa29b704.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://Claude outputs/office_clock_preview.png"
-dest_files=["res://.godot/imported/office_clock_preview.png-6e1c80b415c761ff6c4a44f2b2c5d378.ctex"]
+source_file="res://Claude outputs/floor_stack_preview.png"
+dest_files=["res://.godot/imported/floor_stack_preview.png-94f028b1d425281c0ce01d0efa29b704.ctex"]
 
 [params]
 

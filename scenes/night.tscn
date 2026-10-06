@@ -13,7 +13,15 @@
 [ext_resource type="Script" uid="uid://37y8umbo2p64" path="res://scripts/teacher_dispatch.gd" id="10_dfedx"]
 [ext_resource type="Script" uid="uid://bwwsoqeim8riw" path="res://scripts/clock_label.gd" id="11_clock"]
 [ext_resource type="FontFile" uid="uid://dn3c55xwnx2lq" path="res://assets/fonts/Anton-Regular.ttf" id="12_anton"]
+[ext_resource type="Script" uid="uid://6ci81sjk8pft" path="res://scripts/audio/night_audio.gd" id="12_ux3fn"]
+[ext_resource type="Resource" uid="uid://dlpi45gi38arj" path="res://audio/events/tablet_open.tres" id="13_7xgsy"]
 [ext_resource type="Script" uid="uid://bklomxc7njnab" path="res://scripts/joe_music.gd" id="13_jmusic"]
+[ext_resource type="Resource" uid="uid://u42qbuq2twnb" path="res://audio/events/tablet_close.tres" id="14_dfdsg"]
+[ext_resource type="Resource" uid="uid://cvekrvp6a3st3" path="res://audio/events/camera_switch.tres" id="15_f6bwt"]
+[ext_resource type="Resource" uid="uid://bhkj61k6a7cn4" path="res://audio/events/teacher_call.tres" id="16_kyeot"]
+[ext_resource type="Resource" uid="uid://dujugtwadmhya" path="res://audio/events/teacher_found.tres" id="17_f6bwt"]
+[ext_resource type="Resource" uid="uid://pnmvphp320xw" path="res://audio/events/teacher_not_found.tres" id="18_kyeot"]
+[ext_resource type="Resource" uid="uid://8lik3sxkhcgy" path="res://audio/events/phone_pickup.tres" id="19_kyeot"]
 
 [sub_resource type="Resource" id="Resource_dfedx"]
 script = ExtResource("7_ywbc3")
@@ -77,9 +85,20 @@ text = "9 AM"
 horizontal_alignment = 2
 script = ExtResource("11_clock")
 
-[node name="JoeMusic" type="Node" parent="." unique_id=949015690 node_paths=PackedStringArray("tablet")]
+[node name="JoeMusic" type="Node" parent="." unique_id=949015690]
 script = ExtResource("13_jmusic")
+
+[node name="NightAudio" type="Node" parent="." unique_id=1198877798 node_paths=PackedStringArray("tablet")]
+script = ExtResource("12_ux3fn")
 tablet = NodePath("../Tablet")
+call_duck_db = -22.0
+tablet_open = ExtResource("13_7xgsy")
+tablet_close = ExtResource("14_dfdsg")
+camera_switch = ExtResource("15_f6bwt")
+teacher_call = ExtResource("16_kyeot")
+teacher_found = ExtResource("17_f6bwt")
+teacher_not_found = ExtResource("18_kyeot")
+phone_pickup = ExtResource("19_kyeot")
 
 [node name="NightClock" type="Node" parent="." unique_id=1028250175]
 script = ExtResource("9_ywbc3")

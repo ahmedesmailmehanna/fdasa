@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="SoundEvent" format=3 uid="uid://8lik3sxkhcgy"]
+
+[ext_resource type="Script" uid="uid://cgphmduetxnj1" path="res://scripts/audio/sound_event.gd" id="1_mxd5f"]
+[ext_resource type="AudioStream" uid="uid://v5eaighimvxq" path="res://assets/audio/sfx/phone_pickup/phone_pickup_1.wav" id="2_y2dqh"]
+[ext_resource type="AudioStream" uid="uid://wfy0fd8783ro" path="res://assets/audio/sfx/phone_pickup/phone_pickup_2.wav" id="3_rhk3r"]
+[ext_resource type="AudioStream" uid="uid://drfqkexfw5cfv" path="res://assets/audio/sfx/phone_pickup/phone_pickup_3.wav" id="4_ornd1"]
+
+[sub_resource type="AudioStreamRandomizer" id="AudioStreamRandomizer_pwpry"]
+streams_count = 3
+stream_0/stream = ExtResource("2_y2dqh")
+stream_1/stream = ExtResource("3_rhk3r")
+stream_2/stream = ExtResource("4_ornd1")
+
+[resource]
+script = ExtResource("1_mxd5f")
+stream = SubResource("AudioStreamRandomizer_pwpry")
+bus = &"Phone"
+volume_db = -3.0
+pitch_range = Vector2(0.97, 1.03)
+metadata/_custom_type_script = "uid://cgphmduetxnj1"
